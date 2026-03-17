@@ -94,18 +94,39 @@ function nextStep(direction) {
     globalError.style.display = 'none';
 
     if (direction === 1) {
-        if (!validateStep(currentStep)) return;
+        const isStepValid = validateStep(currentStep);
+        console.log(`Step ${currentStep} validation: ${isStepValid}`);
+        if (!isStepValid) {
+            showGlobalError('Please fix all errors before proceeding.');
+            // Scroll to first error
+            const firstError = document.querySelector('.input-wrapper.error');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return;
+        }
     }
 
     // Hide current step
-    document.getElementById(`step${currentStep}`).classList.remove('active');
+    const currentStepEl = document.getElementById(`step${currentStep}`);
+    if (currentStepEl) {
+        currentStepEl.classList.remove('active');
+    }
     
     currentStep += direction;
 
     // Show new step
-    document.getElementById(`step${currentStep}`).classList.add('active');
+    const nextStepEl = document.getElementById(`step${currentStep}`);
+    if (nextStepEl) {
+        nextStepEl.classList.add('active');
+    }
 
     updateStepperUI();
+    // Scroll to top of form
+    const activeStep = document.querySelector('.form-step.active');
+    if (activeStep) {
+        activeStep.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 }
 
 function updateStepperUI() {
@@ -282,10 +303,16 @@ function setupRealtimeValidation() {
 function validateStep(step) {
     let isValid = true;
     const stepContainer = document.getElementById(`step${step}`);
-    if (!stepContainer) return isValid; // Prevent crash if step doesn't exist
+    if (!stepContainer) {
+        console.warn(`Step container not found: step${step}`);
+        return isValid;
+    }
+    
+    console.log(`%cValidating step ${step}...`, 'color: blue; font-weight: bold');
     
     // Select all inputs, selects, and textareas in this step that are visible (not hidden conditionally)
     const elementsToValidate = stepContainer.querySelectorAll('input, select, textarea');
+    console.log(`Found ${elementsToValidate.length} elements to validate`);
 
     elementsToValidate.forEach(el => {
         // Skip validation if parent conditional section is hidden
@@ -299,11 +326,13 @@ function validateStep(step) {
             return;
         }
 
-        if(!validateField(el)) {
+        const fieldValid = validateField(el);
+        if(!fieldValid) {
             isValid = false;
         }
     });
 
+    console.log(`%cStep ${step} validation result: ${isValid}`, isValid ? 'color: green' : 'color: red; font-weight: bold');
     return isValid;
 }
 
@@ -410,6 +439,7 @@ function validateField(input) {
     if (isValid) {
         setSuccess(input.id);
     } else {
+        console.warn(`INVALID ${input.id}: ${errorMsg}`);
         setError(input.id, errorMsg);
     }
 
@@ -419,21 +449,33 @@ function validateField(input) {
 // UI Validation Helpers
 function setError(elementId, message) {
     const el = document.getElementById(elementId);
-    if(!el) return;
+    if(!el) {
+        console.warn(`setError: Element not found: ${elementId}`);
+        return;
+    }
     const wrapper = el.closest('.input-wrapper');
-    if(!wrapper) return;
+    if(!wrapper) {
+        console.warn(`setError: input-wrapper not found for ${elementId}`);
+        return;
+    }
     
     wrapper.classList.remove('success');
     wrapper.classList.add('error');
     
     // Find error span - it's a sibling of input-wrapper within form-group
     const formGroup = wrapper.closest('.form-group');
-    if(!formGroup) return;
+    if(!formGroup) {
+        console.warn(`setError: form-group not found for ${elementId}`);
+        return;
+    }
     
     let errorSpan = formGroup.querySelector('.error-message');
     if (errorSpan) {
         if(message) errorSpan.textContent = message;
         errorSpan.classList.add('show');
+        console.log(`✓ Error displayed for ${elementId}: ${message}`);
+    } else {
+        console.warn(`setError: error-message span not found for ${elementId}`);
     }
 }
 
