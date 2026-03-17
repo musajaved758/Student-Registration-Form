@@ -29,27 +29,26 @@ document.addEventListener('DOMContentLoaded', () => {
     updateStepperUI();
     
     // 🔧 PROGRAMMATIC EVENT BINDING - Ensures buttons work reliably
-    const btnNext = document.getElementById('btnNext');
-    const btnPrev = document.getElementById('btnPrev');
-    const btnSubmit = document.getElementById('btnSubmit');
-    
-    if (btnNext) {
+    // Remove duplicate DOM queries - use global variables
+    if (btnNext && !btnNext.hasAttribute('data-event-bound')) {
         btnNext.addEventListener('click', (e) => {
             e.preventDefault();
+            e.stopPropagation();
             console.log('🟢 Next button clicked!');
             nextStep(1);
         });
+        btnNext.setAttribute('data-event-bound', 'true');
         console.log('✅ Next button event bound');
-    } else {
-        console.error('❌ btnNext not found!');
     }
     
-    if (btnPrev) {
+    if (btnPrev && !btnPrev.hasAttribute('data-event-bound')) {
         btnPrev.addEventListener('click', (e) => {
             e.preventDefault();
+            e.stopPropagation();
             console.log('🔙 Prev button clicked!');
             nextStep(-1);
         });
+        btnPrev.setAttribute('data-event-bound', 'true');
         console.log('✅ Prev button event bound');
     }
 });
