@@ -1,9 +1,9 @@
 // ==========================================
 // CONFIGURATION - Replace with your Supabase credentials
 // ==========================================
+// IMPORTANT: Move these to environment variables in production!
 const SUPABASE_URL = 'https://lxhtbwggihbrqgsswcvw.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4aHRid2dnaWhicnFnc3N3Y3Z3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3MzgzNzksImV4cCI6MjA4OTMxNDM3OX0.C_QLTwiAybg3qwVZOGqpBlp1rC38Oakt1nT3HbjPrC0';
-;
 
 // Initialize Supabase Client
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -35,6 +35,11 @@ function initForm() {
         
         if (!validateStep(3)) {
             showGlobalError('Please fix errors before submitting.');
+            return;
+        }
+
+        // Confirmation dialog
+        if (!confirm('Are you sure you want to submit this application? Please review all information before proceeding.')) {
             return;
         }
 
@@ -79,8 +84,9 @@ function initForm() {
         }
     });
 
-    // Auto-save form data periodically or on change
+    // Auto-save form data with debounce
     form.addEventListener('change', saveDraft);
+    form.addEventListener('input', saveDraft);
 }
 
 // UI Navigation Logic
@@ -147,6 +153,12 @@ function toggleSection(sectionId, isVisible) {
             if (input.type === 'checkbox') input.checked = false;
             else input.value = '';
             clearValidationUI(input);
+        });
+    }
+    // Clear any error messages in hidden sections
+    if (!isVisible) {
+        section.querySelectorAll('.error-message').forEach(msg => {
+            msg.classList.remove('show');
         });
     }
     saveDraft();
@@ -324,9 +336,9 @@ function validateField(input) {
                 }
                 break;
             case 'contact_number':
-                if (!/^(03\d{2}-\d{7}|\+92\d{10})$/.test(value)) {
+                if (!/^(03\d{2}-\d{7}|\+923\d{9}|\+92\d{10})$/.test(value)) {
                     isValid = false;
-                    errorMsg = 'Format: 03XX-XXXXXXX or +92XXXXXXXXXX';
+                    errorMsg = 'Format: 03XX-XXXXXXX or +923XXXXXXXXX';
                 }
                 break;
             case 'date_of_birth':
@@ -337,31 +349,59 @@ function validateField(input) {
                 if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
                     age--;
                 }
-                if (age < 16 || age > 35) {
+                if (age < 16) {
                     isValid = false;
-                    errorMsg = 'Age must be between 16 and 35 years';
+                    errorMsg = 'Age must be at least 16 years';
+                }
+                if (age > 60) {
+                    isValid = false;
+                    errorMsg = 'Age seems invalid. Please check your date of birth';
                 }
                 break;
             case 'matric_board_other':
                 const boardSelect = document.getElementById('matric_board');
-                if (boardSelect.value === 'Other' && value.length < 2) {
+                if (boardSelect && boardSelect.value === 'Other' && value.length < 2) {
                      isValid = false;
-                     errorMsg = 'Please specify the board';
+                     errorMsg = 'Please specify the board name';
                 }
                 break;
         }
         
-        // Marks Specific Validation on blur
-        if(input.id.includes('obtain_marks') || input.id.includes('obtained_marks')) {
-             const baseId = input.id.replace('obtain_marks', '').replace('obtained_marks', '');
-             let totalId = baseId + 'total_marks';
-             if(baseId === 'matric_') totalId = 'matric_total_marks';
+        // Marks Specific Validation
+        if(input.id.includes('obtain_marks') || input.id.includes('obtained_marks') ||
+           input.id.includes('total_marks')) {
+             const numValue = parseInt(value);
              
-             const totalEl = document.getElementById(totalId);
-             if(totalEl && totalEl.value) {
-                 if(parseInt(value) > parseInt(totalEl.value)) {
+             // Check if marks are positive
+             if(input.id.includes('total_marks')) {
+                 if (numValue <= 0) {
                      isValid = false;
-                     errorMsg = 'Cannot exceed total marks: ' + totalEl.value;
+                     errorMsg = 'Total marks must be greater than 0';
+                 } else if (numValue > 1000) {
+                     isValid = false;
+                     errorMsg = 'Total marks seems too high (max 1000)';
+                 }
+             }
+             
+             // Check if obtained marks are valid
+             if(input.id.includes('obtain_marks') || input.id.includes('obtained_marks')) {
+                 if (numValue < 0) {
+                     isValid = false;
+                     errorMsg = 'Obtained marks cannot be negative';
+                 }
+                 
+                 // Compare with total marks
+                 const baseId = input.id.replace('obtain_marks', '').replace('obtained_marks', '');
+                 let totalId = baseId + 'total_marks';
+                 if(baseId === 'matric_') totalId = 'matric_total_marks';
+                 
+                 const totalEl = document.getElementById(totalId);
+                 if(totalEl && totalEl.value) {
+                     const totalVal = parseInt(totalEl.value);
+                     if(numValue > totalVal) {
+                         isValid = false;
+                         errorMsg = `Cannot exceed total marks (${totalVal})`;
+                     }
                  }
              }
         }
@@ -380,43 +420,50 @@ function validateField(input) {
 function setError(elementId, message) {
     const el = document.getElementById(elementId);
     if(!el) return;
-    const wrapper = el.closest('.input-wrapper') || el.parentElement;
+    const wrapper = el.closest('.input-wrapper');
+    if(!wrapper) return;
     
     wrapper.classList.remove('success');
     wrapper.classList.add('error');
     
-    // Find or create error span
-    let errorSpan = el.parentElement.querySelector('.error-message');
-    if(!errorSpan) errorSpan = el.parentElement.nextElementSibling;
+    // Find error span - it's a sibling of input-wrapper within form-group
+    const formGroup = wrapper.closest('.form-group');
+    if(!formGroup) return;
     
-    if (errorSpan && errorSpan.classList.contains('error-message')) {
+    let errorSpan = formGroup.querySelector('.error-message');
+    if (errorSpan) {
         if(message) errorSpan.textContent = message;
-        errorSpan.style.display = 'block';
+        errorSpan.classList.add('show');
     }
 }
 
 function setSuccess(elementId) {
     const el = document.getElementById(elementId);
     if(!el) return;
-    const wrapper = el.closest('.input-wrapper') || el.parentElement;
+    const wrapper = el.closest('.input-wrapper');
+    if(!wrapper) return;
     
     wrapper.classList.remove('error');
     wrapper.classList.add('success');
     
-    let errorSpan = el.parentElement.querySelector('.error-message');
-    if(!errorSpan) errorSpan = el.parentElement.nextElementSibling;
+    const formGroup = wrapper.closest('.form-group');
+    if(!formGroup) return;
     
-    if (errorSpan && errorSpan.classList.contains('error-message')) {
-        errorSpan.style.display = 'none';
+    let errorSpan = formGroup.querySelector('.error-message');
+    if (errorSpan) {
+        errorSpan.classList.remove('show');
     }
 }
 
 function clearValidationUI(input) {
-    const wrapper = input.closest('.input-wrapper') || input.parentElement;
+    const wrapper = input.closest('.input-wrapper');
+    if(!wrapper) return;
     wrapper.classList.remove('success', 'error');
-    let errorSpan = input.parentElement.querySelector('.error-message') || input.parentElement.nextElementSibling;
-    if (errorSpan && errorSpan.classList.contains('error-message')) {
-        errorSpan.style.display = 'none';
+    const formGroup = wrapper.closest('.form-group');
+    if(!formGroup) return;
+    let errorSpan = formGroup.querySelector('.error-message');
+    if (errorSpan) {
+        errorSpan.classList.remove('show');
     }
 }
 
@@ -434,6 +481,12 @@ function showSuccess() {
     
     // Smooth scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showDraftSaved() {
+    // Optional: Show a subtle notification that draft is saved
+    // You can add this to a notification area if desired
+    console.log('Draft saved successfully');
 }
 
 // Supabase Utilities
@@ -469,18 +522,27 @@ function collectFormData() {
             return;
         }
 
-        // Handle 'Other' Board
+        // Skip 'Other' board input field - handled by matric_board
+        if (input.id === 'matric_board_other') {
+            return;
+        }
+        
+        // Handle 'Other' Board selection
         if (input.id === 'matric_board') {
             if (input.value === 'Other') {
-                data.matric_board = document.getElementById('matric_board_other').value.trim();
+                const otherBoardInput = document.getElementById('matric_board_other');
+                if (!otherBoardInput || !otherBoardInput.value.trim()) {
+                    // Skip if other board is empty - let validation catch it
+                    return;
+                }
+                data.matric_board = otherBoardInput.value.trim();
             } else {
                 data.matric_board = input.value;
             }
-        } 
-        else if (input.id === 'matric_board_other') {
-            // Handled above
+            return;
         }
-        else if (input.value) {
+        
+        if (input.value) {
             // Type conversion
             if (input.type === 'number' || input.id.includes('year')) {
                 data[input.name] = parseInt(input.value);
@@ -493,18 +555,23 @@ function collectFormData() {
     return data;
 }
 
-// Draft Functionality
+let draftSaveTimeout;
 function saveDraft() {
-    const data = collectFormData();
-    
-    // Save checkboxes state manually
-    const hasGeneralNursing = document.getElementById('has_general_nursing');
-    const hasMidwifery = document.getElementById('has_midwifery');
-    
-    if (hasGeneralNursing) data.has_general_nursing = hasGeneralNursing.checked;
-    if (hasMidwifery) data.has_midwifery = hasMidwifery.checked;
-    
-    localStorage.setItem('registrationDraft', JSON.stringify(data));
+    // Debounce draft saving to avoid excessive localStorage writes
+    clearTimeout(draftSaveTimeout);
+    draftSaveTimeout = setTimeout(() => {
+        const data = collectFormData();
+        
+        // Save checkboxes state manually
+        const hasGeneralNursing = document.getElementById('has_general_nursing');
+        const hasMidwifery = document.getElementById('has_midwifery');
+        
+        if (hasGeneralNursing) data.has_general_nursing = hasGeneralNursing.checked;
+        if (hasMidwifery) data.has_midwifery = hasMidwifery.checked;
+        
+        localStorage.setItem('registrationDraft', JSON.stringify(data));
+        showDraftSaved();
+    }, 500); // Save 500ms after user stops typing
 }
 
 function loadDraft() {
@@ -520,10 +587,15 @@ function loadDraft() {
                  input.value = data[input.name];
                  
                  // Trigger visibility for Other board
-                 if(input.id === 'matric_board' && !Array.from(input.options).some(opt => opt.value === data.matric_board)) {
-                     input.value = 'Other';
-                     document.getElementById('matric_board_other_div').style.display = 'block';
-                     document.getElementById('matric_board_other').value = data.matric_board;
+                 if(input.id === 'matric_board' && input.options) {
+                     const optionExists = Array.from(input.options).some(opt => opt.value === data.matric_board);
+                     if (!optionExists && data.matric_board) {
+                         input.value = 'Other';
+                         const otherDiv = document.getElementById('matric_board_other_div');
+                         const otherInput = document.getElementById('matric_board_other');
+                         if (otherDiv) otherDiv.style.display = 'block';
+                         if (otherInput) otherInput.value = data.matric_board;
+                     }
                  }
              }
         });
@@ -532,15 +604,19 @@ function loadDraft() {
         if (data.has_general_nursing) {
             const gn = document.getElementById('has_general_nursing');
             const gnSection = document.getElementById('general_nursing_section');
-            if (gn) gn.checked = true;
-            if (gnSection) gnSection.classList.add('active');
+            if (gn) {
+                gn.checked = true;
+                if (gnSection) gnSection.classList.add('active');
+            }
         }
         
         if (data.has_midwifery) {
             const mw = document.getElementById('has_midwifery');
             const mwSection = document.getElementById('midwifery_section');
-            if (mw) mw.checked = true;
-            if (mwSection) mwSection.classList.add('active');
+            if (mw) {
+                mw.checked = true;
+                if (mwSection) mwSection.classList.add('active');
+            }
         }
 
     } catch (e) {

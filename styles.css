@@ -252,19 +252,22 @@ input:focus, select:focus, textarea:focus {
 .input-wrapper.error select,
 .input-wrapper.error textarea {
   border-color: var(--error);
-  background-color: rgba(239, 68, 68, 0.05);
+  border-width: 2px;
+  background-color: rgba(239, 68, 68, 0.15);
+  color: var(--text-dark);
 }
 
 .error-message {
   color: var(--error);
-  font-size: 0.8rem;
-  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  margin-top: 0.35rem;
   display: none;
+  font-weight: 500;
+  animation: slideDown 0.3s ease;
 }
 
-.input-wrapper.error ~ .error-message {
+.error-message.show {
   display: block;
-  animation: slideDown 0.3s ease;
 }
 
 @keyframes slideDown {
