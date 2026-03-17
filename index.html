@@ -3,174 +3,327 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Registration</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        .container {
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            width: 100%;
-            max-width: 500px;
-        }
-        h2 {
-            color: #333;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-        .subtitle {
-            color: #666;
-            text-align: center;
-            margin-bottom: 30px;
-            font-size: 14px;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #555;
-            font-weight: 600;
-            font-size: 14px;
-        }
-        input, select {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 15px;
-            transition: border-color 0.3s;
-        }
-        input:focus, select:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        .error {
-            color: #e74c3c;
-            font-size: 13px;
-            margin-top: 5px;
-            display: none;
-        }
-        button {
-            width: 100%;
-            padding: 15px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
-        }
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        .success-message {
-            display: none;
-            background: #d4edda;
-            color: #155724;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        .already-submitted {
-            display: none;
-            background: #fff3cd;
-            color: #856404;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-        }
-        .spinner {
-            display: none;
-            width: 20px;
-            height: 20px;
-            border: 2px solid #ffffff;
-            border-top-color: transparent;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 10px;
-            vertical-align: middle;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-    </style>
+    <title>Student Registration Form</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <div class="container">
-        <h2>🎓 Student Registration</h2>
-        <p class="subtitle">Fill in your details below</p>
-        
-        <div class="success-message" id="successMsg">
-            ✅ Registration successful! Thank you.
-        </div>
-        
-        <div class="already-submitted" id="alreadySubmitted">
-            <h3>Already Registered!</h3>
-            <p>You have already submitted your information.</p>
+        <div class="header" id="formHeader">
+            <h1>Student Registration</h1>
+            <p>Please fill out the form carefully for your admission process.</p>
         </div>
 
-        <form id="studentForm">
-            <div class="form-group">
-                <label for="email">Email Address *</label>
-                <input type="email" id="email" name="email" required placeholder="student@example.com">
-                <div class="error" id="emailError">Please enter a valid email</div>
+        <!-- Success Message -->
+        <div class="success-message" id="successMessage">
+            <div class="success-icon-large">✓</div>
+            <h2>Registration Successful!</h2>
+            <p>Your application has been submitted successfully. We will contact you soon.</p>
+            <button class="btn-primary" onclick="location.reload()">Submit Another Application</button>
+        </div>
+
+        <form id="registrationForm" novalidate>
+            <!-- Stepper Indicator -->
+            <div class="stepper" id="stepper">
+                <div class="step-progress" id="stepProgress"></div>
+                <div class="step active" data-step="1">
+                    <div class="step-circle"><span>1</span></div>
+                    <div class="step-title">Personal Info</div>
+                </div>
+                <div class="step" data-step="2">
+                    <div class="step-circle"><span>2</span></div>
+                    <div class="step-title">Academic</div>
+                </div>
+                <div class="step" data-step="3">
+                    <div class="step-circle"><span>3</span></div>
+                    <div class="step-title">Nursing</div>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label for="fullName">Full Name *</label>
-                <input type="text" id="fullName" name="full_name" required placeholder="John Doe">
+            <!-- STEP 1: Personal Information -->
+            <div class="form-step active" id="step1">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="student_name" class="required">Student Name</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="student_name" name="student_name" placeholder="Full Name" required minlength="3">
+                        </div>
+                        <span class="error-message">Name must be at least 3 characters.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="father_name" class="required">Father/Husband Name</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="father_name" name="father_name" placeholder="Full Name" required minlength="3">
+                        </div>
+                        <span class="error-message">Name must be at least 3 characters.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="date_of_birth" class="required">Date of Birth</label>
+                        <div class="input-wrapper">
+                            <input type="date" id="date_of_birth" name="date_of_birth" required>
+                        </div>
+                        <span class="error-message">Age must be between 16 and 35 years.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="domicile" class="required">Domicile</label>
+                        <div class="input-wrapper">
+                            <select id="domicile" name="domicile" required>
+                                <option value="" disabled selected>Select Province/Region</option>
+                                <option value="Punjab">Punjab</option>
+                                <option value="Sindh">Sindh</option>
+                                <option value="KPK">KPK</option>
+                                <option value="Balochistan">Balochistan</option>
+                                <option value="Islamabad">Islamabad</option>
+                                <option value="Gilgit-Baltistan">Gilgit-Baltistan</option>
+                                <option value="AJK">AJK</option>
+                            </select>
+                        </div>
+                        <span class="error-message">Please select your domicile.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="student_cnic" class="required">Student CNIC</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="student_cnic" name="student_cnic" placeholder="00000-0000000-0" maxlength="15" required>
+                        </div>
+                        <span class="error-message">Invalid CNIC format.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="father_cnic" class="required">Father/Husband CNIC</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="father_cnic" name="father_cnic" placeholder="00000-0000000-0" maxlength="15" required>
+                        </div>
+                        <span class="error-message">Invalid CNIC format.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email" class="required">E-Mail</label>
+                        <div class="input-wrapper">
+                            <input type="email" id="email" name="email" placeholder="example@email.com" required>
+                        </div>
+                        <span class="error-message">Please enter a valid email address.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="contact_number" class="required">Contact Number</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="contact_number" name="contact_number" placeholder="03XX-XXXXXXX" maxlength="12" required>
+                        </div>
+                        <span class="error-message">Format: 03XX-XXXXXXX or +92XXXXXXXXXX</span>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="address" class="required">Address</label>
+                        <div class="input-wrapper">
+                            <textarea id="address" name="address" rows="3" placeholder="Complete residential address" required minlength="10"></textarea>
+                        </div>
+                        <span class="error-message">Address must be at least 10 characters long.</span>
+                    </div>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label for="phone">Phone Number *</label>
-                <input type="tel" id="phone" name="phone" required placeholder="+1234567890">
+            <!-- STEP 2: Academic - Matric -->
+            <div class="form-step" id="step2">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="matric_roll_no" class="required">Matric Roll No</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="matric_roll_no" name="matric_roll_no" required>
+                        </div>
+                        <span class="error-message">Roll number is required.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="matric_passing_year" class="required">Passing Year</label>
+                        <div class="input-wrapper">
+                            <select id="matric_passing_year" name="matric_passing_year" required>
+                                <option value="" disabled selected>Select Year</option>
+                                <!-- JS will populate years -->
+                            </select>
+                        </div>
+                        <span class="error-message">Please select passing year.</span>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="matric_board" class="required">Matric Board/University</label>
+                        <div class="input-wrapper">
+                            <select id="matric_board" name="matric_board" required onchange="handleBoardChange(this, 'matric_board_other_div')">
+                                <option value="" disabled selected>Select Board</option>
+                                <option value="FBISE">FBISE Islamabad</option>
+                                <option value="BISE Lahore">BISE Lahore</option>
+                                <option value="BISE Karachi">BISE Karachi</option>
+                                <option value="BISE Peshawar">BISE Peshawar</option>
+                                <option value="BISE Quetta">BISE Quetta</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <span class="error-message">Please select your board.</span>
+                    </div>
+                    
+                    <!-- Hidden field for Other Board -->
+                    <div class="form-group full-width" id="matric_board_other_div" style="display: none; margin-top: -1rem;">
+                        <input type="text" id="matric_board_other" placeholder="Please specify board name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="matric_total_marks" class="required">Total Marks</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="matric_total_marks" name="matric_total_marks" required min="1">
+                        </div>
+                        <span class="error-message">Total marks are required.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="matric_obtained_marks" class="required">Obtained Marks</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="matric_obtained_marks" name="matric_obtained_marks" required min="0">
+                        </div>
+                        <span class="error-message">Obtained marks must be ≤ Total marks.</span>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="pnc_number" class="required">PNC Number</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="pnc_number" name="pnc_number" required>
+                        </div>
+                        <span class="error-message">PNC Number is required.</span>
+                    </div>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label for="course">Course/Program *</label>
-                <select id="course" name="course" required>
-                    <option value="">Select Course</option>
-                    <option value="Computer Science">Computer Science</option>
-                    <option value="Engineering">Engineering</option>
-                    <option value="Business">Business Administration</option>
-                    <option value="Medicine">Medicine</option>
-                    <option value="Arts">Arts & Design</option>
-                </select>
+            <!-- STEP 3: Nursing Qualifications -->
+            <div class="form-step" id="step3">
+                <label class="checkbox-group">
+                    <input type="checkbox" id="has_general_nursing" name="has_general_nursing" onchange="toggleSection('general_nursing_section', this.checked)">
+                    <span style="font-weight: 500;">I have General Nursing qualification</span>
+                </label>
+
+                <div class="conditional-section" id="general_nursing_section">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="general_nursing_roll_no">Roll No</label>
+                            <div class="input-wrapper">
+                                <input type="text" id="general_nursing_roll_no" name="general_nursing_roll_no">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="general_nursing_passing_year">Passing Year</label>
+                            <div class="input-wrapper">
+                                <select id="general_nursing_passing_year" name="general_nursing_passing_year">
+                                    <option value="" selected>Select Year (Optional)</option>
+                                    <!-- JS will populate years -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="general_nursing_total_marks">Total Marks</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="general_nursing_total_marks" name="general_nursing_total_marks" min="1">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="general_nursing_obtain_marks">Obtained Marks</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="general_nursing_obtain_marks" name="general_nursing_obtain_marks" min="0">
+                            </div>
+                            <span class="error-message">Obtained marks must be ≤ Total marks.</span>
+                        </div>
+                        
+                        <div class="form-group full-width">
+                            <label for="general_nursing_registration_no">Registration No</label>
+                            <div class="input-wrapper">
+                                <input type="text" id="general_nursing_registration_no" name="general_nursing_registration_no">
+                            </div>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="general_nursing_board">Board/University</label>
+                            <div class="input-wrapper">
+                                <input type="text" id="general_nursing_board" name="general_nursing_board">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <label class="checkbox-group">
+                    <input type="checkbox" id="has_midwifery" name="has_midwifery" onchange="toggleSection('midwifery_section', this.checked)">
+                    <span style="font-weight: 500;">I have Midwifery qualification</span>
+                </label>
+
+                <div class="conditional-section" id="midwifery_section">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="midwifery_roll_no">Roll No</label>
+                            <div class="input-wrapper">
+                                <input type="text" id="midwifery_roll_no" name="midwifery_roll_no">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="midwifery_passing_year">Passing Year</label>
+                            <div class="input-wrapper">
+                                <select id="midwifery_passing_year" name="midwifery_passing_year">
+                                    <option value="" selected>Select Year (Optional)</option>
+                                    <!-- JS will populate years -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="midwifery_total_marks">Total Marks</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="midwifery_total_marks" name="midwifery_total_marks" min="1">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="midwifery_obtained_marks">Obtained Marks</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="midwifery_obtained_marks" name="midwifery_obtained_marks" min="0">
+                            </div>
+                            <span class="error-message">Obtained marks must be ≤ Total marks.</span>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="midwifery_registration">Registration No</label>
+                            <div class="input-wrapper">
+                                <input type="text" id="midwifery_registration" name="midwifery_registration">
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label for="address">Address</label>
-                <input type="text" id="address" name="address" placeholder="123 Main St, City">
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <button type="button" id="btnPrev" class="btn-secondary btn-hidden" onclick="nextStep(-1)">
+                    Back
+                </button>
+                <div style="flex:1"></div> <!-- Spacer -->
+                <button type="button" id="btnNext" class="btn-primary" onclick="nextStep(1)">
+                    Next Step
+                </button>
+                <button type="submit" id="btnSubmit" class="btn-primary btn-hidden">
+                    <span>Submit Application</span>
+                    <div class="loader"></div>
+                </button>
             </div>
-
-            <button type="submit" id="submitBtn">
-                <span class="spinner" id="spinner"></span>
-                <span id="btnText">Submit Registration</span>
-            </button>
+            
+            <!-- Global Form Error -->
+            <div id="globalError" style="color: var(--error); text-align: right; margin-top: 1rem; display: none;">
+                Please fix the errors before submitting.
+            </div>
         </form>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
 </body>
 </html>
