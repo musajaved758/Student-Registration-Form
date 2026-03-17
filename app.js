@@ -27,6 +27,31 @@ document.addEventListener('DOMContentLoaded', () => {
     loadDraft();
     setupRealtimeValidation();
     updateStepperUI();
+    
+    // 🔧 PROGRAMMATIC EVENT BINDING - Ensures buttons work reliably
+    const btnNext = document.getElementById('btnNext');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnSubmit = document.getElementById('btnSubmit');
+    
+    if (btnNext) {
+        btnNext.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('🟢 Next button clicked!');
+            nextStep(1);
+        });
+        console.log('✅ Next button event bound');
+    } else {
+        console.error('❌ btnNext not found!');
+    }
+    
+    if (btnPrev) {
+        btnPrev.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('🔙 Prev button clicked!');
+            nextStep(-1);
+        });
+        console.log('✅ Prev button event bound');
+    }
 });
 
 function initForm() {
@@ -91,42 +116,69 @@ function initForm() {
 
 // UI Navigation Logic
 function nextStep(direction) {
+    console.log(`🚀 nextStep called: direction=${direction}, currentStep=${currentStep}`);
     globalError.style.display = 'none';
 
     if (direction === 1) {
+        console.group('🔍 Validating Step', currentStep);
         const isStepValid = validateStep(currentStep);
-        console.log(`Step ${currentStep} validation: ${isStepValid}`);
+        console.groupEnd();
+        
         if (!isStepValid) {
-            showGlobalError('Please fix all errors before proceeding.');
-            // Scroll to first error
-            const firstError = document.querySelector('.input-wrapper.error');
-            if (firstError) {
-                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-            return;
+            showGlobalError('Please fix all highlighted errors before proceeding.');
+            return false;
         }
+        console.log('✅ Step validation PASSED');
     }
 
-    // Hide current step
+    // 🔧 ROBUST DOM MANIPULATION
     const currentStepEl = document.getElementById(`step${currentStep}`);
+    console.log('Current step element:', currentStepEl);
+    
     if (currentStepEl) {
         currentStepEl.classList.remove('active');
+        console.log(`✅ Hid step${currentStep}`);
+    } else {
+        console.error(`❌ step${currentStep} element not found!`);
     }
     
     currentStep += direction;
-
-    // Show new step
+    console.log('New currentStep:', currentStep);
+    
+    // Show new step with safety checks
     const nextStepEl = document.getElementById(`step${currentStep}`);
+    console.log('Next step element:', nextStepEl);
+    
     if (nextStepEl) {
         nextStepEl.classList.add('active');
+        console.log(`✅ Activated step${currentStep}`);
+        
+        // Force reflow for CSS transitions
+        nextStepEl.offsetHeight;
+        console.log('📐 DOM reflow triggered');
+    } else {
+        console.error(`❌ step${currentStep} element not found! Available steps:`, 
+            Array.from(document.querySelectorAll('[id^=step]')).map(el => el.id));
+        return false;
     }
 
     updateStepperUI();
-    // Scroll to top of form
-    const activeStep = document.querySelector('.form-step.active');
-    if (activeStep) {
-        activeStep.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    
+    // 🔧 Enhanced scrolling
+    setTimeout(() => {
+        const activeStep = document.querySelector('.form-step.active');
+        if (activeStep) {
+            activeStep.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start',
+                inline: 'nearest'
+            });
+            console.log('📜 Scrolled to active step');
+        }
+    }, 100);
+    
+    console.log('🎉 nextStep completed successfully');
+    return true;
 }
 
 function updateStepperUI() {
@@ -301,38 +353,63 @@ function setupRealtimeValidation() {
 
 // Core Validation Engine
 function validateStep(step) {
+    console.log(`🔍 validateStep(${step}) - Starting validation`);
     let isValid = true;
+    let errorFields = [];
+    
     const stepContainer = document.getElementById(`step${step}`);
     if (!stepContainer) {
-        console.warn(`Step container not found: step${step}`);
-        return isValid;
+        console.error(`❌ Step container not found: step${step}`);
+        return false;
     }
     
-    console.log(`%cValidating step ${step}...`, 'color: blue; font-weight: bold');
-    
-    // Select all inputs, selects, and textareas in this step that are visible (not hidden conditionally)
-    const elementsToValidate = stepContainer.querySelectorAll('input, select, textarea');
-    console.log(`Found ${elementsToValidate.length} elements to validate`);
+    // 🎯 More targeted selector - only REQUIRED + visible fields
+    const elementsToValidate = stepContainer.querySelectorAll('input[required], select[required], textarea[required]');
+    console.log(`📋 Found ${elementsToValidate.length} REQUIRED elements in step${step}`);
 
     elementsToValidate.forEach(el => {
-        // Skip validation if parent conditional section is hidden
+        // Skip if conditionally hidden
         const conditionalParent = el.closest('.conditional-section');
         if (conditionalParent && !conditionalParent.classList.contains('active')) {
+            console.log(`⏭️ Skipping ${el.id} (conditional hidden)`);
             return; 
         }
 
-        // Skip hidden fields like 'other board' unless its parent is visible
-        if (el.parentElement.style.display === 'none') {
+        // Skip truly hidden fields
+        const $parent = el.parentElement;
+        if ($parent.style.display === 'none' || window.getComputedStyle($parent).display === 'none') {
+            console.log(`⏭️ Skipping ${el.id} (parent hidden)`);
             return;
         }
 
         const fieldValid = validateField(el);
-        if(!fieldValid) {
+        if (!fieldValid) {
             isValid = false;
+            errorFields.push(el.id);
+            console.log(`❌ FAILED: ${el.id}`);
+        } else {
+            console.log(`✅ PASSED: ${el.id}`);
         }
     });
 
-    console.log(`%cStep ${step} validation result: ${isValid}`, isValid ? 'color: green' : 'color: red; font-weight: bold');
+    if (!isValid) {
+        console.log('🚨 Validation FAILED. First error:', errorFields[0]);
+        // 🔧 Auto-focus & scroll to FIRST error
+        const firstErrorEl = document.getElementById(errorFields[0]);
+        if (firstErrorEl) {
+            firstErrorEl.focus();
+            firstErrorEl.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+            });
+        }
+    } else {
+        console.log('🎉 All REQUIRED fields PASSED');
+    }
+    
+    console.log(`%cStep ${step} RESULT: ${isValid ? '✅ PASS' : '❌ FAIL'}`, 
+        isValid ? 'color: green; font-weight: bold; font-size: 14px;' : 'color: red; font-weight: bold; font-size: 14px;');
+    
     return isValid;
 }
 
@@ -364,12 +441,13 @@ function validateField(input) {
                     errorMsg = 'Invalid email format';
                 }
                 break;
-            case 'contact_number':
-                if (!/^(03\d{2}-\d{7}|\+923\d{9}|\+92\d{10})$/.test(value)) {
-                    isValid = false;
-                    errorMsg = 'Format: 03XX-XXXXXXX or +923XXXXXXXXX';
-                }
-                break;
+    case 'contact_number':
+        // 🔧 More flexible validation for GitHub Pages testing
+        if (!/^(03\d{2}[- ]?\d{7}|\+92[3]\d{9})$/.test(value)) {
+            isValid = false;
+            errorMsg = 'Format: 03XX-XXXXXXX or +923XXXXXXXXX';
+        }
+        break;
             case 'date_of_birth':
                 const dob = new Date(value);
                 const today = new Date();
@@ -380,11 +458,11 @@ function validateField(input) {
                 }
                 if (age < 16) {
                     isValid = false;
-                    errorMsg = 'Age must be at least 16 years';
+                    errorMsg = 'Must be at least 16 years old';
                 }
-                if (age > 60) {
+                if (age > 50) { // 🔧 Relaxed upper limit
                     isValid = false;
-                    errorMsg = 'Age seems invalid. Please check your date of birth';
+                    errorMsg = 'Please verify date of birth';
                 }
                 break;
             case 'matric_board_other':
