@@ -6,22 +6,31 @@ const SUPABASE_URL = 'https://lxhtbwggihbrqgsswcvw.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4aHRid2dnaWhicnFnc3N3Y3Z3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3MzgzNzksImV4cCI6MjA4OTMxNDM3OX0.C_QLTwiAybg3qwVZOGqpBlp1rC38Oakt1nT3HbjPrC0';
 
 // Initialize Supabase Client
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // State Management
 let currentStep = 1;
 const totalSteps = 3;
-const form = document.getElementById('registrationForm');
-
-// DOM Elements
-const btnPrev = document.getElementById('btnPrev');
-const btnNext = document.getElementById('btnNext');
-const btnSubmit = document.getElementById('btnSubmit');
-const stepProgress = document.getElementById('stepProgress');
-const globalError = document.getElementById('globalError');
+let form, btnPrev, btnNext, btnSubmit, stepProgress, globalError;
 
 // Initialize Application
 document.addEventListener('DOMContentLoaded', () => {
+    // Query DOM elements after DOM is fully loaded
+    form = document.getElementById('registrationForm');
+    btnPrev = document.getElementById('btnPrev');
+    btnNext = document.getElementById('btnNext');
+    btnSubmit = document.getElementById('btnSubmit');
+    stepProgress = document.getElementById('stepProgress');
+    globalError = document.getElementById('globalError');
+    
+    // Check if critical elements exist
+    if (!form) {
+        console.error('❌ Form element not found!');
+        return;
+    }
+    
+    console.log('✅ DOM elements found:', { form: !!form, btnPrev: !!btnPrev, btnNext: !!btnNext, btnSubmit: !!btnSubmit });
+    
     initForm();
     populateYears();
     loadDraft();
@@ -88,7 +97,7 @@ function initForm() {
             }
 
             // Insert data
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('students')
                 .insert([formData])
                 .select();
@@ -615,7 +624,7 @@ async function checkUnique(field, value) {
     if(SUPABASE_URL === 'YOUR_SUPABASE_PROJECT_URL') return true;
 
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('students')
             .select(field)
             .eq(field, value)
