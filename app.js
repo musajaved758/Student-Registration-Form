@@ -12,6 +12,164 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 let currentStep = 1;
 const totalSteps = 3;
 let form, btnPrev, btnNext, btnSubmit, stepProgress, globalError;
+let currentUser = null; // Store authenticated user
+
+// Auth State Management
+function initAuth() {
+    const btnGoogleSignIn = document.getElementById('btnGoogleSignIn');
+    const btnSignOut = document.getElementById('btnSignOut');
+    const authPrompt = document.getElementById('authPrompt');
+    const authUser = document.getElementById('authUser');
+    const authError = document.getElementById('authError');
+    
+    // Check existing session
+    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+            setCurrentUser(session.user);
+        }
+        updateAuthUI();
+    });
+    
+    // Listen for auth changes
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+            setCurrentUser(session.user);
+            checkExistingSubmission(session.user.id);
+        } else if (event === 'SIGNED_OUT') {
+            setCurrentUser(null);
+        }
+        updateAuthUI();
+    });
+    
+    // Sign in handler
+    if (btnGoogleSignIn) {
+        btnGoogleSignIn.addEventListener('click', async () => {
+            try {
+                const { error } = await supabaseClient.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        redirectTo: window.location.href
+                    }
+                });
+                if (error) throw error;
+            } catch (err) {
+                console.error('Sign in error:', err);
+                showAuthError('Failed to sign in with Google. Please try again.');
+            }
+        });
+    }
+    
+    // Sign out handler
+    if (btnSignOut) {
+        btnSignOut.addEventListener('click', async () => {
+            await supabaseClient.auth.signOut();
+            setCurrentUser(null);
+            updateAuthUI();
+        });
+    }
+}
+
+function setCurrentUser(user) {
+    currentUser = user;
+    console.log('User signed in:', user?.email);
+}
+
+function updateAuthUI() {
+    const authPrompt = document.getElementById('authPrompt');
+    const authUser = document.getElementById('authUser');
+    const userAvatar = document.getElementById('userAvatar');
+    const userName = document.getElementById('userName');
+    const userEmail = document.getElementById('userEmail');
+    const stepper = document.getElementById('stepper');
+    const formSteps = document.querySelectorAll('.form-step');
+    const formActions = document.querySelector('.form-actions');
+    
+    if (currentUser) {
+        // User is signed in
+        if (authPrompt) authPrompt.style.display = 'none';
+        if (authUser) {
+            authUser.style.display = 'flex';
+            if (userAvatar) userAvatar.src = currentUser.user_metadata?.avatar_url || '';
+            if (userName) userName.textContent = currentUser.user_metadata?.full_name || currentUser.email;
+            if (userEmail) userEmail.textContent = currentUser.email;
+        }
+        // Show form
+        if (stepper) stepper.style.display = 'flex';
+        formSteps.forEach(step => step.style.display = 'block');
+        if (formActions) formActions.style.display = 'flex';
+    } else {
+        // User not signed in
+        if (authPrompt) authPrompt.style.display = 'block';
+        if (authUser) authUser.style.display = 'none';
+        // Hide form
+        if (stepper) stepper.style.display = 'none';
+        formSteps.forEach(step => step.style.display = 'none');
+        if (formActions) formActions.style.display = 'none';
+    }
+}
+
+function showAuthError(msg) {
+    const authError = document.getElementById('authError');
+    if (authError) {
+        authError.textContent = msg;
+        authError.style.display = 'block';
+        setTimeout(() => { authError.style.display = 'none'; }, 5000);
+    }
+}
+
+async function checkExistingSubmission(userId) {
+    try {
+        const { data, error } = await supabaseClient
+            .from('students')
+            .select('id')
+            .eq('user_id', userId)
+            .limit(1);
+            
+        if (error) {
+            console.warn('Could not check existing submission:', error.message);
+            return;
+        }
+        
+        if (data && data.length > 0) {
+            // User already submitted
+            showAlreadySubmittedMessage();
+        }
+    } catch (err) {
+        console.warn('Error checking existing submission:', err);
+    }
+}
+
+function showAlreadySubmittedMessage() {
+    const form = document.getElementById('registrationForm');
+    const formHeader = document.getElementById('formHeader');
+    const authSection = document.getElementById('authSection');
+    
+    if (form) form.style.display = 'none';
+    if (formHeader) formHeader.style.display = 'none';
+    if (authSection) authSection.style.display = 'none';
+    
+    // Create and show message
+    const container = document.querySelector('.container');
+    const existingMsg = document.getElementById('alreadySubmittedMessage');
+    if (!existingMsg) {
+        const msgDiv = document.createElement('div');
+        msgDiv.id = 'alreadySubmittedMessage';
+        msgDiv.className = 'success-message';
+        msgDiv.style.display = 'block';
+        msgDiv.innerHTML = `
+            <div class="success-icon-large">✓</div>
+            <h2>Application Already Submitted!</h2>
+            <p>You have already submitted an application using this Google account. Each user can only submit one application.</p>
+            <p style="margin-top: 1rem; font-size: 0.9rem; color: #666;">
+                Signed in as: ${currentUser?.email || 'Unknown'}
+            </p>
+            <button class="btn-primary" onclick="supabaseClient.auth.signOut().then(() => location.reload())">
+                Sign Out
+            </button>
+        `;
+        container.appendChild(msgDiv);
+    }
+}
 
 // Initialize Application
 document.addEventListener('DOMContentLoaded', () => {
@@ -31,11 +189,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     console.log('✅ DOM elements found:', { form: !!form, btnPrev: !!btnPrev, btnNext: !!btnNext, btnSubmit: !!btnSubmit });
     
+    initAuth(); // Initialize auth before form
     initForm();
     populateYears();
     loadDraft();
     setupRealtimeValidation();
     updateStepperUI();
+    updateAuthUI(); // Set initial auth UI state
     
     // 🔧 PROGRAMMATIC EVENT BINDING - Ensures buttons work reliably
     // Remove duplicate DOM queries - use global variables
@@ -81,7 +241,31 @@ function initForm() {
         submitBtn.disabled = true;
 
         try {
+            // Check if user is authenticated
+            if (!currentUser) {
+                showGlobalError('Please sign in with Google before submitting.');
+                return;
+            }
+            
+            // Check if user already submitted
+            const { data: existingData, error: checkError } = await supabaseClient
+                .from('students')
+                .select('id')
+                .eq('user_id', currentUser.id)
+                .limit(1);
+                
+            if (checkError) {
+                console.warn('Could not check existing submission:', checkError);
+            } else if (existingData && existingData.length > 0) {
+                showAlreadySubmittedMessage();
+                return;
+            }
+            
             const formData = collectFormData();
+            
+            // Add user_id to track who submitted
+            formData.user_id = currentUser.id;
+            formData.auth_email = currentUser.email;
             
             // Final server-side validation checks
             const isEmailUnique = await checkUnique('email', formData.email);
