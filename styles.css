@@ -164,17 +164,90 @@ body {
   margin-bottom: 2rem;
 }
 
-.header h1 {
-  font-size: 2rem;
-  font-weight: 700;
-  background: -webkit-linear-gradient(right, var(--primary), var(--secondary));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: 0.5rem;
+.college-branding {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  padding: 1.5rem 2rem;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  color: white;
 }
 
-.header p {
+.college-branding h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: white;
+  background: none;
+  background-clip: unset;
+  -webkit-background-clip: unset;
+  -webkit-text-fill-color: unset;
+  margin-bottom: 0.3rem;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.college-branding h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.95);
+  margin-bottom: 0.75rem;
+}
+
+.college-info {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.9);
+  line-height: 1.6;
+}
+
+.college-info p {
+  color: rgba(255,255,255,0.9);
+  margin: 0.2rem 0;
+}
+
+.college-info strong {
+  color: white;
+}
+
+.form-subtitle {
   color: var(--text-muted);
+  font-size: 1rem;
+  margin-top: 1rem;
+}
+
+/* Developer Footer */
+.developer-footer {
+  margin-top: 2rem;
+  padding: 1rem;
+  text-align: center;
+  background: var(--input-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  width: 100%;
+}
+
+.developer-info {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.developer-info strong {
+  color: var(--primary);
+}
+
+@media (max-width: 640px) {
+  .college-branding {
+    padding: 1rem;
+  }
+  
+  .college-branding h1 {
+    font-size: 1.4rem;
+  }
+  
+  .college-branding h2 {
+    font-size: 0.95rem;
+  }
+  
+  .college-info {
+    font-size: 0.75rem;
+  }
 }
 
 /* Stepper */
