@@ -4,7 +4,7 @@
   --primary: #4F46E5;
   --primary-hover: #4338CA;
   --secondary: #ec4899;
-  --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --bg-gradient: linear-gradient(135deg,  #764ba2 100%, #667eea 0%,);
   --surface: rgba(255, 255, 255, 0.95);
   --text-dark: #1f2937;
   --text-muted: #6b7280;
@@ -162,6 +162,14 @@ body {
 .header {
   text-align: center;
   margin-bottom: 2rem;
+}
+
+
+
+.college-logo img {
+  max-width: 200px;
+  /* width: 100px; */
+  height: auto;
 }
 
 .college-branding {
