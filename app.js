@@ -28,6 +28,7 @@ function initAuth() {
             setCurrentUser(session.user);
         }
         updateAuthUI();
+        updateStepperUI(); // 🔧 Ensure step visibility is set after auth state
     });
     
     // Listen for auth changes
@@ -39,16 +40,25 @@ function initAuth() {
             setCurrentUser(null);
         }
         updateAuthUI();
+        updateStepperUI(); // 🔧 Ensure steps are visible after auth state change
     });
     
     // Sign in handler
     if (btnGoogleSignIn) {
         btnGoogleSignIn.addEventListener('click', async () => {
             try {
+                // Check if user already has a session
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (session) {
+                    // User already signed in, just reload to trigger auth state
+                    window.location.reload();
+                    return;
+                }
+                
                 const { error } = await supabaseClient.auth.signInWithOAuth({
                     provider: 'google',
                     options: {
-                        redirectTo: window.location.href
+                        redirectTo: window.location.origin + window.location.pathname
                     }
                 });
                 if (error) throw error;
@@ -93,9 +103,13 @@ function updateAuthUI() {
             if (userName) userName.textContent = currentUser.user_metadata?.full_name || currentUser.email;
             if (userEmail) userEmail.textContent = currentUser.email;
         }
-        // Show form
+        // Show form elements - steps visibility handled by CSS classes, not inline styles
         if (stepper) stepper.style.display = 'flex';
-        formSteps.forEach(step => step.style.display = 'block');
+        // 🔧 Ensure step 1 is active when user signs in
+        document.querySelectorAll('.form-step').forEach((step, index) => {
+            if (index === 0) step.classList.add('active');
+            else step.classList.remove('active');
+        });
         if (formActions) formActions.style.display = 'flex';
     } else {
         // User not signed in
@@ -103,7 +117,7 @@ function updateAuthUI() {
         if (authUser) authUser.style.display = 'none';
         // Hide form
         if (stepper) stepper.style.display = 'none';
-        formSteps.forEach(step => step.style.display = 'none');
+        formSteps.forEach(step => step.classList.remove('active'));
         if (formActions) formActions.style.display = 'none';
     }
 }
@@ -387,6 +401,16 @@ function updateStepperUI() {
             stepEl.classList.add('completed');
         } else if (stepNum === currentStep) {
             stepEl.classList.add('active');
+        }
+    });
+
+    // 🔧 Show only current form step, hide others
+    document.querySelectorAll('.form-step').forEach((stepEl, index) => {
+        const stepNum = index + 1;
+        if (stepNum === currentStep) {
+            stepEl.classList.add('active');
+        } else {
+            stepEl.classList.remove('active');
         }
     });
 
