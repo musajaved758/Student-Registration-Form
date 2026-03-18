@@ -700,9 +700,9 @@ function validateField(input) {
                  if (numValue <= 0) {
                      isValid = false;
                      errorMsg = 'Total marks must be greater than 0';
-                 } else if (numValue > 1000) {
+                 } else if (numValue > 1200) {
                      isValid = false;
-                     errorMsg = 'Total marks seems too high (max 1000)';
+                     errorMsg = 'Total marks seems too high (max 1200)';
                  }
              }
              
