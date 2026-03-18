@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "Independent College Form Auto-Filler",
+  "version": "1.0",
+  "description": "Auto-fill Independent College of Nursing registration form with Supabase data",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://lxhtbwggihbrqgsswcvw.supabase.co/*",
+    "https://musajaved758.github.io/*",
+    "https://e-reg.uhs.edu.pk/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Form Auto-Filler"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://musajaved758.github.io/Student-Registration-Form/*",
+        "https://e-reg.uhs.edu.pk/*",
+        "*://*/student*registration*",
+        "*://*/admission*form*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "icons": {
+    "16": "icon_logo.png",
+    "48": "icon_logo.png",
+    "128": "icon_logo.png"
+  }
+}

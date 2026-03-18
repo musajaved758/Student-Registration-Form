@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 300px;
+      padding: 20px;
+      font-family: 'Inter', sans-serif;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .logo {
+      width: 60px;
+      height: 60px;
+      margin-bottom: 10px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      color: #333;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #4F46E5;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      margin-bottom: 10px;
+    }
+    button:hover {
+      background: #4338CA;
+    }
+    .status {
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 10px;
+      font-size: 12px;
+    }
+    .success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .data-list {
+      max-height: 350px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .data-item {
+      padding: 12px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .data-item:hover {
+      background: #f0f0f0;
+    }
+    .data-item.selected {
+      background: #e8f4f8;
+      border-left: 3px solid #4F46E5;
+    }
+    .data-item:last-child {
+      border-bottom: none;
+    }
+    .student-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .student-name {
+      font-weight: 600;
+      color: #333;
+      font-size: 14px;
+    }
+    .student-cnic {
+      font-size: 12px;
+      color: #666;
+      background: #f0f0f0;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .student-details, .student-academic {
+      font-size: 11px;
+      color: #666;
+      display: flex;
+      gap: 12px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+    .student-academic {
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px dashed #ddd;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="icon_logo.png" alt="Logo" class="logo">
+    <h3>Form Auto-Filler</h3>
+  </div>
+
+  <div class="form-group">
+    <label for="searchInput">Search Student:</label>
+    <input type="text" id="searchInput" placeholder="Enter name or email...">
+  </div>
+
+  <div id="studentList" class="data-list" style="display: none;">
+    <!-- Student data will be populated here -->
+  </div>
+
+  <button id="fetchData">Fetch Student Data</button>
+  <button id="fillForm" style="display: none;">Fill Form</button>
+  <button id="clearData">Clear Data</button>
+
+  <div id="status" class="status" style="display: none;"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
