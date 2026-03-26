@@ -166,17 +166,31 @@ async function fillFormWithData() {
 function fillForm(data) {
   console.log('Filling form with data:', data);
   
+  // First, let's detect all form fields (for debugging)
+  console.log('=== Detecting form fields ===');
+  const allInputs = document.querySelectorAll('input, select, textarea');
+  allInputs.forEach((input, i) => {
+    if (input.id && input.id.includes('MainContent')) {
+      console.log(`${i}: ID=${input.id}, Name=${input.name}, Type=${input.type}, Label=${getLabelText(input)}`);
+    }
+  });
+  
+  function getLabelText(input) {
+    const label = document.querySelector(`label[for="${input.id}"]`);
+    return label ? label.textContent.trim().substring(0, 30) : 'N/A';
+  }
+  
   // Map of possible field names to try
   const fieldMappings = {
     'student_name': ['student_name', 'name', 'studentName', 'txtName', 'Name'],
-    'father_name': ['father_name', 'fatherName', 'txtFatherName', 'FatherName'],
-    'date_of_birth': ['date_of_birth', 'dob', 'birthDate', 'txtDOB', 'DOB'],
-    'student_cnic': ['student_cnic', 'cnic', 'txtCNIC', 'CNIC', 'studentCnic'],
-    'father_cnic': ['father_cnic', 'fatherCnic', 'txtFatherCNIC'],
+    'father_name': ['father_name', 'fatherName', 'txtFatherName', 'FatherName', 'MainContent_TextBox1'],
+    'date_of_birth': ['date_of_birth', 'dob', 'birthDate', 'txtDOB', 'DOB', 'MainContent_TextBox10'],
+    'student_cnic': ['student_cnic', 'cnic', 'txtCNIC', 'CNIC', 'studentCnic', 'MainContent_ddlIDType'],
+    'father_cnic': ['father_cnic', 'fatherCnic', 'txtFatherCNIC', 'MainContent_TextBox4'],
     'domicile': ['domicile', 'city', 'txtCity', 'ddlCity'],
-    'email': ['email', 'txtEmail', 'Email'],
+    'email': ['email', 'txtEmail', 'Email', 'MainContent_email'],
     'contact_number': ['contact_number', 'contact', 'phone', 'txtPhone', 'txtContact'],
-    'address': ['address', 'txtAddress', 'Address'],
+    'address': ['address', 'txtAddress', 'Address', 'MainContent_TextBox17'],
     'matric_roll_no': ['matric_roll_no', 'matricRollNo', 'txtMatricRoll'],
     'matric_passing_year': ['matric_passing_year', 'matricYear', 'txtMatricYear'],
     'matric_board': ['matric_board', 'board', 'txtBoard'],
@@ -210,16 +224,41 @@ function fillForm(data) {
       }
 
       if (element) {
-        element.value = value;
-        element.dispatchEvent(new Event('input', { bubbles: true }));
-        element.dispatchEvent(new Event('change', { bubbles: true }));
-        element.dispatchEvent(new Event('blur', { bubbles: true }));
-        console.log(`Filled ${dataKey} in ${id}`);
+        // For radio buttons, click them instead of setting value
+        if (element.type === 'radio') {
+          element.click();
+          element.checked = true;
+          console.log(`Selected radio ${dataKey}: ${id}`);
+        } else {
+          element.value = value;
+          element.dispatchEvent(new Event('input', { bubbles: true }));
+          element.dispatchEvent(new Event('change', { bubbles: true }));
+          element.dispatchEvent(new Event('blur', { bubbles: true }));
+          console.log(`Filled ${dataKey} in ${id}`);
+        }
         filledCount++;
         break;
       }
     }
   });
+
+  // Handle Gender - Select Female (RadioButtonList1_1)
+  const femaleRadio = document.getElementById('MainContent_RadioButtonList1_1');
+  if (femaleRadio) {
+    femaleRadio.click();
+    femaleRadio.checked = true;
+    console.log('Selected Gender: Female');
+    filledCount++;
+  }
+
+  // Handle Student Type - Select Local (RadioButtonList4_0)
+  const localRadio = document.getElementById('MainContent_RadioButtonList4_0');
+  if (localRadio) {
+    localRadio.click();
+    localRadio.checked = true;
+    console.log('Selected Student Type: Local');
+    filledCount++;
+  }
 
   // Also try to find and fill by label text
   const labels = document.querySelectorAll('label');

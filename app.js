@@ -666,19 +666,13 @@ function validateField(input) {
         break;
             case 'date_of_birth':
                 const dob = new Date(value);
-                const today = new Date();
-                let age = today.getFullYear() - dob.getFullYear();
-                const m = today.getMonth() - dob.getMonth();
-                if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
-                    age--;
-                }
-                if (age < 16) {
+                const dobYear = dob.getFullYear();
+                if (dobYear < 1950) {
                     isValid = false;
-                    errorMsg = 'Must be at least 16 years old';
-                }
-                if (age > 100) { // 🔧 Relaxed upper limit
+                    errorMsg = 'Date of birth cannot be before 1950';
+                } else if (dobYear > 2015) {
                     isValid = false;
-                    errorMsg = 'Please verify date of birth';
+                    errorMsg = 'Date of birth cannot be after 2015';
                 }
                 break;
             case 'matric_board_other':
