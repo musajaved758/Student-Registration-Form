@@ -676,7 +676,7 @@ function validateField(input) {
                     isValid = false;
                     errorMsg = 'Must be at least 16 years old';
                 }
-                if (age > 50) { // 🔧 Relaxed upper limit
+                if (age > 100) { // 🔧 Relaxed upper limit
                     isValid = false;
                     errorMsg = 'Please verify date of birth';
                 }
