@@ -474,7 +474,7 @@ function populateYears() {
     selects.forEach(id => {
         const select = document.getElementById(id);
         if(!select) return;
-        for (let year = currentYear; year >= 2000; year--) {
+        for (let year = currentYear; year >= 1970; year--) {
             const option = document.createElement('option');
             option.value = year;
             option.textContent = year;
