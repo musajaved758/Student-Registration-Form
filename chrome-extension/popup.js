@@ -97,7 +97,8 @@ function displayStudents(students) {
       </div>
       <div class="student-academic">
         <span>Matric: ${student.matric_board || 'N/A'} (${student.matric_passing_year || 'N/A'})</span>
-        <span>PNC: ${student.pnc_number || 'N/A'}</span>
+        <span>PNC with matric: ${student.pnc_number || 'N/A'} (${student.matric_roll_no || 'N/A'})</span>
+        <span>PNC: ${student.pnc_number || 'N/A'} </span>
       </div>
     `;
     item.addEventListener('click', () => selectStudent(student, item));
@@ -165,6 +166,8 @@ async function fillFormWithData() {
 // This function runs in the page context
 function fillForm(data) {
   console.log('Filling form with data:', data);
+  console.log('DOMICILE DEBUG - data.domicile =', data.domicile);
+  console.log('DOMICILE DEBUG - All keys:', Object.keys(data));
   
   // First, let's detect all form fields (for debugging)
   console.log('=== Detecting form fields ===');
@@ -180,22 +183,72 @@ function fillForm(data) {
     return label ? label.textContent.trim().substring(0, 30) : 'N/A';
   }
   
-  // Map of possible field names to try
+  // ============================================
+  // FIELD MAPPINGS - PERSONAL INFORMATION
+  // ============================================
   const fieldMappings = {
+    // 1. Student Name (already working)
     'student_name': ['student_name', 'name', 'studentName', 'txtName', 'Name'],
+    
+    // 2. Father/Husband Name (already working)
     'father_name': ['father_name', 'fatherName', 'txtFatherName', 'FatherName', 'MainContent_TextBox1'],
+    
+    // 3. Date of Birth (already working)
     'date_of_birth': ['date_of_birth', 'dob', 'birthDate', 'txtDOB', 'DOB', 'MainContent_TextBox10'],
+    
+    // 4. Student CNIC (already working)
     'student_cnic': ['student_cnic', 'cnic', 'txtCNIC', 'CNIC', 'studentCnic', 'MainContent_ddlIDType'],
+    
+    // 5. Father CNIC (already working)
     'father_cnic': ['father_cnic', 'fatherCnic', 'txtFatherCNIC', 'MainContent_TextBox4'],
-    'domicile': ['domicile', 'city', 'txtCity', 'ddlCity'],
-    'email': ['email', 'txtEmail', 'Email', 'MainContent_email'],
+    
+    // 6. Email - Use exact ID and name only
+    'email': ['MainContent_email', 'ctl00$MainContent$email'],
+    
+    // 7. Contact Number (already working)
     'contact_number': ['contact_number', 'contact', 'phone', 'txtPhone', 'txtContact'],
-    'address': ['address', 'txtAddress', 'Address', 'MainContent_TextBox17'],
-    'matric_roll_no': ['matric_roll_no', 'matricRollNo', 'txtMatricRoll'],
-    'matric_passing_year': ['matric_passing_year', 'matricYear', 'txtMatricYear'],
-    'matric_board': ['matric_board', 'board', 'txtBoard'],
-    'matric_total_marks': ['matric_total_marks', 'totalMarks', 'txtTotalMarks'],
-    'matric_obtained_marks': ['matric_obtained_marks', 'obtainedMarks', 'txtObtainedMarks'],
+    
+    // 8. Permanent Address - Use exact ID and name only
+    'address': ['MainContent_TextBox17', 'ctl00$MainContent$TextBox17'],
+    
+    // 9. Category of Seat (dropdown - will select "Open Merit")
+    'categoryofseat': ['categoryofseat', 'categoryOfSeat', 'ctl00$MainContent$DropDownList20', 'MainContent_DropDownList20'],
+    
+    // 10. Domicile/City (dropdown)
+    'domicile': ['domicile', 'city', 'txtCity', 'ddlCity', 'MainContent_ddlDomicile', 'ctl00$MainContent$ddlDomicile'],
+    
+    // 11. Date of Entry to College
+    'date_of_entry': ['ctl00$MainContent$TextBox20', 'MainContent_TextBox20', ],
+    
+    // 12. Class Roll Number (auto-generated but fillable)
+    'classrollno': ['classrollno', 'ctl00$MainContent$TextBox3', 'MainContent_TextBox3'],
+    
+    // ============================================
+    // ACADEMIC INFORMATION
+    // ============================================
+    
+    // 13. SSC/Degree Title (dropdown)
+    'ssc_degree_title': ['ssc_degree_title', 'ctl00$MainContent$DropDownList7', 'MainContent_DropDownList7'],
+    
+    // 14. Matric Roll Number
+    'matricrollno': ['matricrollno', 'ctl00$MainContent$TextBox22', 'MainContent_TextBox22'],
+    
+    // 15. Matric/Equivalent Registration No
+    'matricRegistrationno': ['matricRegistrationno', 'ctl00$MainContent$TextBox24', 'MainContent_TextBox24'],
+    
+    // 16. Matric Passing Year (dropdown)
+    'matric_passing_year': ['matric_passing_year', 'matricYear', 'ctl00$MainContent$DropDownList2', 'MainContent_DropDownList2'],
+    
+    // 17. Matric Board
+    'matric_board': ['matric_board', 'board', 'txtBoard', 'ctl00$MainContent$TextBox26', 'MainContent_TextBox26'],
+    
+    // 18. Matric Total Marks
+    'matric_total_marks': ['matric_total_marks', 'totalMarks', 'txtTotalMarks', 'ctl00$MainContent$TextBox37', 'MainContent_TextBox37'],
+    
+    // 19. Matric Obtained Marks
+    'matric_obtained_marks': ['matric_obtained_marks', 'obtainedMarks', 'txtObtainedMarks', 'ctl00$MainContent$TextBox25', 'MainContent_TextBox25'],
+    
+    // 20. PNC Number
     'pnc_number': ['pnc_number', 'pnc', 'txtPNC']
   };
 
@@ -259,6 +312,168 @@ function fillForm(data) {
     console.log('Selected Student Type: Local');
     filledCount++;
   }
+
+  // Handle Session - Select Morning (rblsession_0)
+  const morningSession = document.getElementById('MainContent_rblsession_0');
+  if (morningSession) {
+    morningSession.click();
+    morningSession.checked = true;
+    console.log('Selected Session: Morning');
+    filledCount++;
+  }
+
+  // Handle Education Type - Select Annual (rbleduction_0)
+  const annualEdu = document.getElementById('MainContent_rbleduction_0');
+  if (annualEdu) {
+    annualEdu.click();
+    annualEdu.checked = true;
+    console.log('Selected Education Type: Annual');
+    filledCount++;
+  }
+
+  // Handle Mode of Study - Select Regular (rblmodeofstudy_0)
+  const modeRegular = document.getElementById('MainContent_rblmodeofstudy_0');
+  if (modeRegular) {
+    modeRegular.click();
+    modeRegular.checked = true;
+    console.log('Selected Mode of Study: Regular');
+    filledCount++;
+  }
+
+  // Handle Migration - Select No (RadioButtonList2_1)
+  const migrationNo = document.getElementById('MainContent_RadioButtonList2_1');
+  if (migrationNo) {
+    migrationNo.click();
+    migrationNo.checked = true;
+    console.log('Selected Migration: No');
+    filledCount++;
+  }
+
+  // Handle Category of Seat - Select "Open Merit" (DropDownList20)
+  const categorySeat = document.getElementById('MainContent_DropDownList20');
+  if (categorySeat) {
+    categorySeat.value = 'Open Merit';
+    categorySeat.dispatchEvent(new Event('change', { bubbles: true }));
+    console.log('Selected Category of Seat: Open Merit');
+    filledCount++;
+  }
+
+  // Handle Domicile/City Dropdown - Select from Supabase data
+  // Try different possible property names: domicile, city, domicile_city, district
+  const domicileValue = data.domicile || data.city || data.domicile_city || data.district || data.domicile_city;
+  const domicileDropdown = document.getElementById('MainContent_DropDownList3') || document.getElementById('MainContent_ddlDomicile');
+  
+  console.log(`[DOMICILE] Available data keys:`, Object.keys(data));
+  console.log(`[DOMICILE] Trying values: domicile=${data.domicile}, city=${data.city}, district=${data.district}`);
+  
+  if (domicileDropdown && domicileValue) {
+    const supabaseCity = domicileValue.toLowerCase().trim();
+    let found = false;
+    let selectedIndex = -1;
+    
+    console.log(`[DOMICILE] Looking for: "${supabaseCity}"`);
+    console.log(`[DOMICILE] Dropdown found:`, domicileDropdown.id);
+    console.log(`[DOMICILE] Option count: ${domicileDropdown.options.length}`);
+    
+    for (let i = 0; i < domicileDropdown.options.length; i++) {
+      const option = domicileDropdown.options[i];
+      const optionValue = option.value.toLowerCase().trim();
+      const optionText = option.text.toLowerCase().trim();
+      
+      console.log(`[DOMICILE] Option ${i}: value="${optionValue}" text="${optionText}"`);
+      
+      // Match by value or text (case insensitive, partial match allowed)
+      if (optionValue === supabaseCity || 
+          optionText === supabaseCity ||
+          optionText.includes(supabaseCity) ||
+          supabaseCity.includes(optionText)) {
+        selectedIndex = i;
+        found = true;
+        console.log(`[DOMICILE] MATCH FOUND at index ${i}: ${option.text}`);
+        break;
+      }
+    }
+    
+    if (found && selectedIndex >= 0) {
+      // Click dropdown first to activate
+      domicileDropdown.click();
+      domicileDropdown.focus();
+      
+      // Set by index
+      domicileDropdown.selectedIndex = selectedIndex;
+      
+      // Also try setting value directly
+      domicileDropdown.value = domicileDropdown.options[selectedIndex].value;
+      
+      // Trigger multiple events
+      ['focus', 'input', 'change', 'blur'].forEach(evt => {
+        domicileDropdown.dispatchEvent(new Event(evt, { bubbles: true }));
+      });
+      
+      console.log(`[DOMICILE] Successfully set to index ${selectedIndex}`);
+    } else {
+      console.log(`[DOMICILE] ERROR: No match found for "${domicileValue}"`);
+    }
+    
+    filledCount++;
+  } else {
+    console.log(`[DOMICILE] ERROR: Dropdown not found or no data. hasDropdown=${!!domicileDropdown}, hasData=${!!data.domicile}`);
+  }
+
+  // Handle SSC Degree Title - Select first option/Matric (DropDownList7)
+  const sscDegree = document.getElementById('MainContent_DropDownList7');
+  if (sscDegree && sscDegree.options.length > 1) {
+    sscDegree.selectedIndex = 1; // Select first real option (skip "Select" placeholder)
+    sscDegree.dispatchEvent(new Event('change', { bubbles: true }));
+    console.log('Selected SSC Degree Title');
+    filledCount++;
+  }
+
+  // Handle Class Roll Number - Auto fill with 1 if empty or from Supabase
+  const classRollField = document.getElementById('MainContent_TextBox3');
+  if (classRollField) {
+    const rollValue = data.classrollno || '1';
+    classRollField.value = rollValue;
+    classRollField.dispatchEvent(new Event('input', { bubbles: true }));
+    classRollField.dispatchEvent(new Event('change', { bubbles: true }));
+    console.log(`Filled Class Roll Number: ${rollValue}`);
+    filledCount++;
+  }
+
+  // Handle Matric Roll Number (TextBox22)
+  const matricRollField = document.getElementById('MainContent_TextBox22');
+  console.log(`[MATRIC] Field found: ${!!matricRollField}, data.matricrollno: ${data.matricrollno}`);
+  if (matricRollField && data.matric_roll_no) {
+    matricRollField.value = data.matric_roll_no;
+    matricRollField.dispatchEvent(new Event('input', { bubbles: true }));
+    matricRollField.dispatchEvent(new Event('change', { bubbles: true }));
+    console.log(`[MATRIC] Filled Matric Roll Number: ${data.matric_roll_no}`);
+    filledCount++;
+  } else {
+    console.log(`[MATRIC] SKIPPED: field=${!!matricRollField}, value=${data.matric_roll_no}`);
+  }
+
+  // Handle Date Fields - HTML5 type=date requires YYYY-MM-DD format
+  const dateFieldsList = [
+    { id: 'MainContent_TextBox20', name: 'Date of Entry to College' },
+    { id: 'MainContent_TextBox21', name: 'Date of Class Commencement' }
+  ];
+  
+  dateFieldsList.forEach(field => {
+    const dateField = document.getElementById(field.id);
+    if (dateField) {
+      // HTML5 date input requires YYYY-MM-DD format
+      // 01 April 2026 = 2026-04-01
+      const dateValue = '2026-04-01';
+      
+      dateField.value = dateValue;
+      dateField.dispatchEvent(new Event('input', { bubbles: true }));
+      dateField.dispatchEvent(new Event('change', { bubbles: true }));
+      
+      console.log(`Filled ${field.name} (${field.id}): ${dateValue}`);
+      filledCount++;
+    }
+  });
 
   // Also try to find and fill by label text
   const labels = document.querySelectorAll('label');
