@@ -315,49 +315,54 @@
                 <div class="conditional-section" id="general_nursing_section">
                     <div class="form-grid">
                         <div class="form-group">
-                            <label for="general_nursing_roll_no">Roll No</label>
+                            <label for="general_nursing_roll_no" class="required">Roll No</label>
                             <div class="input-wrapper">
-                                <input type="text" id="general_nursing_roll_no" name="general_nursing_roll_no">
+                                <input type="text" id="general_nursing_roll_no" name="general_nursing_roll_no" required>
                             </div>
+                            <span class="error-message">Roll number is required.</span>
                         </div>
 
                         <div class="form-group">
-                            <label for="general_nursing_passing_year">Passing Year</label>
+                            <label for="general_nursing_passing_year" class="required">Passing Year</label>
                             <div class="input-wrapper">
-                                <select id="general_nursing_passing_year" name="general_nursing_passing_year">
-                                    <option value="" selected>Select Year (Optional)</option>
+                                <select id="general_nursing_passing_year" name="general_nursing_passing_year" required>
+                                    <option value="" selected>Select Year</option>
                                     <!-- JS will populate years -->
                                 </select>
                             </div>
+                            <span class="error-message">Please select passing year.</span>
                         </div>
 
                         <div class="form-group">
-                            <label for="general_nursing_total_marks">Total Marks</label>
+                            <label for="general_nursing_total_marks" class="required">Total Marks</label>
                             <div class="input-wrapper">
-                                <input type="number" id="general_nursing_total_marks" name="general_nursing_total_marks" min="1" max="1000">
+                                <input type="number" id="general_nursing_total_marks" name="general_nursing_total_marks" min="1" max="1000" required>
                             </div>
+                            <span class="error-message">Total marks are required (1-1000).</span>
                         </div>
 
                         <div class="form-group">
-                            <label for="general_nursing_obtain_marks">Obtained Marks</label>
+                            <label for="general_nursing_obtain_marks" class="required">Obtained Marks</label>
                             <div class="input-wrapper">
-                                <input type="number" id="general_nursing_obtain_marks" name="general_nursing_obtain_marks" min="0" max="1000">
+                                <input type="number" id="general_nursing_obtain_marks" name="general_nursing_obtain_marks" min="0" max="1000" required>
                             </div>
                             <span class="error-message">Obtained marks must be ≤ Total marks.</span>
                         </div>
                         
                         <div class="form-group full-width">
-                            <label for="general_nursing_registration_no">Registration No</label>
+                            <label for="general_nursing_registration_no" class="required">Registration No</label>
                             <div class="input-wrapper">
-                                <input type="text" id="general_nursing_registration_no" name="general_nursing_registration_no">
+                                <input type="text" id="general_nursing_registration_no" name="general_nursing_registration_no" required>
                             </div>
+                            <span class="error-message">Registration number is required.</span>
                         </div>
 
                         <div class="form-group full-width">
-                            <label for="general_nursing_board">Board/University</label>
+                            <label for="general_nursing_board" class="required">Board/University</label>
                             <div class="input-wrapper">
-                                <input type="text" id="general_nursing_board" name="general_nursing_board">
+                                <input type="text" id="general_nursing_board" name="general_nursing_board" required>
                             </div>
+                            <span class="error-message">Board/University is required.</span>
                         </div>
                     </div>
                 </div>
@@ -370,42 +375,46 @@
                 <div class="conditional-section" id="midwifery_section">
                     <div class="form-grid">
                         <div class="form-group">
-                            <label for="midwifery_roll_no">Roll No</label>
+                            <label for="midwifery_roll_no" class="required">Roll No</label>
                             <div class="input-wrapper">
-                                <input type="text" id="midwifery_roll_no" name="midwifery_roll_no">
+                                <input type="text" id="midwifery_roll_no" name="midwifery_roll_no" required>
                             </div>
+                            <span class="error-message">Roll number is required.</span>
                         </div>
 
                         <div class="form-group">
-                            <label for="midwifery_passing_year">Passing Year</label>
+                            <label for="midwifery_passing_year" class="required">Passing Year</label>
                             <div class="input-wrapper">
-                                <select id="midwifery_passing_year" name="midwifery_passing_year">
-                                    <option value="" selected>Select Year (Optional)</option>
+                                <select id="midwifery_passing_year" name="midwifery_passing_year" required>
+                                    <option value="" selected>Select Year</option>
                                     <!-- JS will populate years -->
                                 </select>
                             </div>
+                            <span class="error-message">Please select passing year.</span>
                         </div>
 
                         <div class="form-group">
-                            <label for="midwifery_total_marks">Total Marks</label>
+                            <label for="midwifery_total_marks" class="required">Total Marks</label>
                             <div class="input-wrapper">
-                                <input type="number" id="midwifery_total_marks" name="midwifery_total_marks" min="1" max="1000">
+                                <input type="number" id="midwifery_total_marks" name="midwifery_total_marks" min="1" max="1000" required>
                             </div>
+                            <span class="error-message">Total marks are required (1-1000).</span>
                         </div>
 
                         <div class="form-group">
-                            <label for="midwifery_obtained_marks">Obtained Marks</label>
+                            <label for="midwifery_obtained_marks" class="required">Obtained Marks</label>
                             <div class="input-wrapper">
-                                <input type="number" id="midwifery_obtained_marks" name="midwifery_obtained_marks" min="0" max="1000">
+                                <input type="number" id="midwifery_obtained_marks" name="midwifery_obtained_marks" min="0" max="1000" required>
                             </div>
                             <span class="error-message">Obtained marks must be ≤ Total marks.</span>
                         </div>
 
                         <div class="form-group full-width">
-                            <label for="midwifery_registration">Registration No</label>
+                            <label for="midwifery_registration" class="required">Registration No</label>
                             <div class="input-wrapper">
-                                <input type="text" id="midwifery_registration" name="midwifery_registration">
+                                <input type="text" id="midwifery_registration" name="midwifery_registration" required>
                             </div>
+                            <span class="error-message">Registration number is required.</span>
                         </div>
                     </div>
                 </div>

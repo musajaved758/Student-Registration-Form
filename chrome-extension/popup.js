@@ -97,8 +97,10 @@ function displayStudents(students) {
       </div>
       <div class="student-academic">
         <span>Matric: ${student.matric_board || 'N/A'} (${student.matric_passing_year || 'N/A'})</span>
-        <span>PNC with matric: ${student.pnc_number || 'N/A'} (${student.matric_roll_no || 'N/A'})</span>
+        <span>Matric RollNo: (${student.matric_roll_no || 'N/A'}) Matric Reg: (${student.matric_registration_no || 'N/A'})</span>
         <span>PNC: ${student.pnc_number || 'N/A'} </span>
+        <span>GN Obtain Marks: ${student.general_nursing_obtain_marks || 'N/A'} </span>
+        <span>GN Obtain Marks: ${student.general_nursing_obtain_marks || 'N/A'} </span>
       </div>
     `;
     item.addEventListener('click', () => selectStudent(student, item));
@@ -453,23 +455,148 @@ function fillForm(data) {
     console.log(`[MATRIC] SKIPPED: field=${!!matricRollField}, value=${data.matric_roll_no}`);
   }
 
+  // Handle Matric Registration Number (TextBox22)
+  const matricRegistrationNo = document.getElementById('MainContent_TextBox24');
+  console.log(`[MATRIC] Field found: ${!!matricRegistrationNo}, data.matricregistrationno: ${data.matricregistrationno}`);
+  if (matricRegistrationNo && data.matric_registration_no) {
+    matricRegistrationNo.value = data.matric_registration_no;
+    matricRegistrationNo.dispatchEvent(new Event('input', { bubbles: true }));
+    matricRegistrationNo.dispatchEvent(new Event('change', { bubbles: true }));
+    console.log(`[MATRIC] Filled Matric Roll Number: ${data.matric_roll_no}`);
+    filledCount++;
+  } else {
+    console.log(`[MATRIC] SKIPPED: field=${!!matricRollField}, value=${data.matric_roll_no}`);
+  }
+//=======================================General Nursing Details=======================================
+
+  // Handle General Nursing Title Dropdown - Select first real option (DropDownList6)
+  const generalNursingTitle = document.getElementById('MainContent_DropDownList6');
+  if (generalNursingTitle && generalNursingTitle.options.length > 1) {
+    generalNursingTitle.selectedIndex = 1; // Index 1 = first real option (skip "--Select--")
+    generalNursingTitle.dispatchEvent(new Event('change', { bubbles: true }));
+    filledCount++;
+  } else {
+    console.log(`[GENERAL NURSING] SKIPPED: dropdown not found or no options`);
+  }
+  // Handle General Nursing Year Dropdown - Select year from Supabase data if available
+    const generalNursingyear = document.getElementById('MainContent_DropDownList4');
+    if (generalNursingyear && generalNursingyear.options.length > 1) {
+      let selected = false;
+      if (data.general_nursing_passing_year) {
+        const yearStr = String(data.general_nursing_passing_year);
+        for (let i = 0; i < generalNursingyear.options.length; i++) {
+          if (generalNursingyear.options[i].value === yearStr || generalNursingyear.options[i].text === yearStr) {
+            generalNursingyear.selectedIndex = i;
+            selected = true;
+            break;
+          }
+        }
+      }
+      if (!selected) {
+        generalNursingyear.selectedIndex = 1; // fallback to first real option
+      }
+      generalNursingyear.dispatchEvent(new Event('change', { bubbles: true }));
+      filledCount++;
+    } else {
+      console.log(`[GENERAL NURSING] SKIPPED: dropdown not found or no options`);
+    }
+
+
+  // Handle General Nursing Roll Number (TextBox24)
+  const generalNursingRollNo = document.getElementById('MainContent_TextBox27');
+  console.log(`[GENERAL NURSING] Field found: ${!!generalNursingRollNo}, data.general_nursing_roll_no: ${data.general_nursing_roll_no}`);
+  if (generalNursingRollNo && data.general_nursing_roll_no) {
+    generalNursingRollNo.value = data.general_nursing_roll_no;
+    generalNursingRollNo.dispatchEvent(new Event('input', { bubbles: true }));
+    generalNursingRollNo.dispatchEvent(new Event('change', { bubbles: true }));
+    console.log(`[GENERAL NURSING] Filled General Nursing Roll Number: ${data.general_nursing_roll_no}`);
+    filledCount++;
+  } else {
+    console.log(`[GENERAL NURSING] SKIPPED: field=${!!generalNursingRollNo}, value=${data.general_nursing_roll_no}`);
+  }
+
+  // Handle General Nursing Registration Number (TextBox24)
+  const generalNursingRegNo = document.getElementById('MainContent_TextBox29');
+  console.log(`[GENERAL NURSING] Field found: ${!!generalNursingRegNo}, data.general_nursing_registration_no: ${data.general_nursing_registration_no}`);
+  if (generalNursingRegNo && data.general_nursing_registration_no) {
+    generalNursingRegNo.value = data.general_nursing_registration_no;
+    generalNursingRegNo.dispatchEvent(new Event('input', { bubbles: true }));
+    generalNursingRegNo.dispatchEvent(new Event('change', { bubbles: true }));
+    console.log(`[GENERAL NURSING] Filled General Nursing Registration Number: ${data.general_nursing_registration_no}`);
+    filledCount++;
+  } else {
+    console.log(`[GENERAL NURSING] SKIPPED: field=${!!generalNursingRegNo}, value=${data.general_nursing_registration_no}`);
+  }
+
+
+  // Handle General Nursing Total Marks (TextBox38)
+  const generalNursingTotalMarks = document.getElementById('MainContent_TextBox38');
+  console.log(`[GENERAL NURSING] Field found: ${!!generalNursingTotalMarks}, data.general_nursing_total_marks: ${data.general_nursing_total_marks}`);
+  if (generalNursingTotalMarks && data.general_nursing_total_marks) {
+    generalNursingTotalMarks.value = data.general_nursing_total_marks;
+    generalNursingTotalMarks.dispatchEvent(new Event('input', { bubbles: true }));
+    generalNursingTotalMarks.dispatchEvent(new Event('change', { bubbles: true }));
+    console.log(`[GENERAL NURSING] Filled General Nursing Total Marks: ${data.general_nursing_total_marks}`);
+    filledCount++;
+  } else {
+    console.log(`[GENERAL NURSING] SKIPPED: field=${!!generalNursingTotalMarks}, value=${data.general_nursing_total_marks}`);
+  }
+
+
+  // Handle General Nursing Obtain Marks (TextBox30)
+  const generalNursingObtainMarks = document.getElementById('MainContent_TextBox30');
+  console.log(`[GENERAL NURSING] Field found: ${!!generalNursingObtainMarks}, data.general_nursing_obtain_marks: ${data.general_nursing_obtain_marks}`);
+  if (generalNursingObtainMarks && data.general_nursing_obtain_marks) {
+    generalNursingObtainMarks.value = data.general_nursing_obtain_marks;
+    generalNursingObtainMarks.dispatchEvent(new Event('input', { bubbles: true }));
+    generalNursingObtainMarks.dispatchEvent(new Event('change', { bubbles: true }));
+    console.log(`[GENERAL NURSING] Filled General Nursing Obtain Marks: ${data.general_nursing_obtain_marks}`);
+    filledCount++;
+  } else {
+    console.log(`[GENERAL NURSING] SKIPPED: field=${!!generalNursingObtainMarks}, value=${data.general_nursing_obtain_marks}`);
+  }
+
+  // Handle General Nursing Board (TextBox31)
+  const generalNursingBoard = document.getElementById('MainContent_TextBox31');
+  console.log(`[GENERAL NURSING] Field found: ${!!generalNursingBoard}, data.general_nursing_board: ${data.general_nursing_board}`);
+  if (generalNursingBoard && data.general_nursing_board) {
+    generalNursingBoard.value = data.general_nursing_board;
+    generalNursingBoard.dispatchEvent(new Event('input', { bubbles: true }));
+    generalNursingBoard.dispatchEvent(new Event('change', { bubbles: true }));
+    console.log(`[GENERAL NURSING] Filled General Nursing Board: ${data.general_nursing_board}`);
+    filledCount++;
+  } else {
+    console.log(`[GENERAL NURSING] SKIPPED: field=${!!generalNursingBoard}, value=${data.general_nursing_board}`);
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  //==========================================Other Fields Like Radio button==========
+
   // Handle Date Fields - HTML5 type=date requires YYYY-MM-DD format
   const dateFieldsList = [
-    { id: 'MainContent_TextBox20', name: 'Date of Entry to College' },
-    { id: 'MainContent_TextBox21', name: 'Date of Class Commencement' }
+    { id: 'MainContent_TextBox20', name: 'Date of Entry to College', dataKey: null },
+    { id: 'MainContent_TextBox21', name: 'Date of Class Commencement', dataKey: null }
   ];
-  
   dateFieldsList.forEach(field => {
     const dateField = document.getElementById(field.id);
     if (dateField) {
-      // HTML5 date input requires YYYY-MM-DD format
-      // 01 April 2026 = 2026-04-01
-      const dateValue = '2026-04-01';
-      
+      // Use hardcoded date if not in Supabase data
+      let dateValue = '2026-04-01'; // YYYY-MM-DD
       dateField.value = dateValue;
       dateField.dispatchEvent(new Event('input', { bubbles: true }));
       dateField.dispatchEvent(new Event('change', { bubbles: true }));
-      
       console.log(`Filled ${field.name} (${field.id}): ${dateValue}`);
       filledCount++;
     }
@@ -508,6 +635,7 @@ function fillForm(data) {
     alert('Could not find matching form fields. The form may use different field names.');
   } else {
     alert(`Successfully filled ${filledCount} fields!`);
+    console.log(`Successfully filled ${filledCount} fields!`);
   }
 }
 
