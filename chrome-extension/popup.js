@@ -467,7 +467,25 @@ function fillForm(data) {
   } else {
     console.log(`[MATRIC] SKIPPED: field=${!!matricRollField}, value=${data.matric_roll_no}`);
   }
+
+
+
+
+
+
+
+
+
+
+
+
 //=======================================General Nursing Details=======================================
+
+
+
+
+
+
 
   // Handle General Nursing Title Dropdown - Select first real option (DropDownList6)
   const generalNursingTitle = document.getElementById('MainContent_DropDownList6');
@@ -567,6 +585,128 @@ function fillForm(data) {
     filledCount++;
   } else {
     console.log(`[GENERAL NURSING] SKIPPED: field=${!!generalNursingBoard}, value=${data.general_nursing_board}`);
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//=======================================Midwifery Details=======================================
+
+
+
+
+
+
+
+  // Handle Midwifery Title Dropdown - Select first real option (DropDownList6)
+  const midwiferyTitle = document.getElementById('MainContent_DropDownList13');
+  if (midwiferyTitle && midwiferyTitle.options.length > 1) {
+    midwiferyTitle.selectedIndex = 6; // Index 6 = first real option (skip "--Select--")
+    midwiferyTitle.dispatchEvent(new Event('change', { bubbles: true }));
+    filledCount++;
+  } else {
+    console.log(`[MIDWIFERY] SKIPPED: dropdown not found or no options`);
+  }
+  // Handle Midwifery Year Dropdown - Select year from Supabase data if available
+    const midwiferyyear = document.getElementById('MainContent_DropDownList14');
+    if (midwiferyyear && midwiferyyear.options.length > 1) {
+      let selected = false;
+      if (data.midwifery_passing_year) {
+        const yearStr = String(data.midwifery_passing_year);
+        for (let i = 0; i < midwiferyyear.options.length; i++) {
+          if (midwiferyyear.options[i].value === yearStr || midwiferyyear.options[i].text === yearStr) {
+            midwiferyyear.selectedIndex = i;
+            selected = true;
+            break;
+          }
+        }
+      }
+      if (!selected) {
+        midwiferyyear.selectedIndex = 1; // fallback to first real option
+      }
+      midwiferyyear.dispatchEvent(new Event('change', { bubbles: true }));
+      filledCount++;
+    } else {
+      console.log(`[MIDWIFERY] SKIPPED: dropdown not found or no options`);
+    }
+
+
+  // Handle Midwifery Roll Number (TextBox24)
+  const midwiferyRollNo = document.getElementById('MainContent_TextBox18');
+  console.log(`[MIDWIFERY] Field found: ${!!midwiferyRollNo}, data.midwifery_roll_no: ${data.midwifery_roll_no}`);
+  if (midwiferyRollNo && data.midwifery_roll_no) {
+    midwiferyRollNo.value = data.midwifery_roll_no;
+    midwiferyRollNo.dispatchEvent(new Event('input', { bubbles: true }));
+    midwiferyRollNo.dispatchEvent(new Event('change', { bubbles: true }));
+    console.log(`[MIDWIFERY] Filled Midwifery Roll Number: ${data.midwifery_roll_no}`);
+    filledCount++;
+  } else {
+    console.log(`[MIDWIFERY] SKIPPED: field=${!!midwiferyRollNo}, value=${data.midwifery_roll_no}`);
+  }
+
+  // Handle Midwifery Registration Number (TextBox29)
+  const midwiferyRegNo = document.getElementById('MainContent_TextBox19');
+  console.log(`[MIDWIFERY] Field found: ${!!midwiferyRegNo}, data.midwifery_registration_no: ${data.midwifery_registration}`);
+  if (midwiferyRegNo && data.midwifery_registration) {
+    midwiferyRegNo.value = data.midwifery_registration;
+    midwiferyRegNo.dispatchEvent(new Event('input', { bubbles: true }));
+    midwiferyRegNo.dispatchEvent(new Event('change', { bubbles: true }));
+    console.log(`[MIDWIFERY] Filled Midwifery Registration Number: ${data.midwifery_registration}`);
+    filledCount++;
+  } else {
+    console.log(`[MIDWIFERY] SKIPPED: field=${!!midwiferyRegNo}, value=${data.midwifery_registration}`);
+  }
+
+
+  // Handle Midwifery Total Marks (TextBox38)
+  const midwiferyTotalMarks = document.getElementById('MainContent_TextBox23');
+  console.log(`[MIDWIFERY] Field found: ${!!midwiferyTotalMarks}, data.midwifery_total_marks: ${data.midwifery_total_marks}`);
+  if (midwiferyTotalMarks && data.midwifery_total_marks) {
+    midwiferyTotalMarks.value = data.midwifery_total_marks;
+    midwiferyTotalMarks.dispatchEvent(new Event('input', { bubbles: true }));
+    midwiferyTotalMarks.dispatchEvent(new Event('change', { bubbles: true }));
+    console.log(`[MIDWIFERY] Filled Midwifery Total Marks: ${data.midwifery_total_marks}`);
+    filledCount++;
+  } else {
+    console.log(`[MIDWIFERY] SKIPPED: field=${!!midwiferyTotalMarks}, value=${data.midwifery_total_marks}`);
+  }
+
+
+  // Handle Midwifery Obtain Marks (TextBox30)
+  const midwiferyObtainMarks = document.getElementById('MainContent_TextBox28');
+  console.log(`[MIDWIFERY] Field found: ${!!midwiferyObtainMarks}, data.midwifery_obtained_marks: ${data.midwifery_obtained_marks}`);
+  if (midwiferyObtainMarks && data.midwifery_obtained_marks) {
+    midwiferyObtainMarks.value = data.midwifery_obtained_marks;
+    midwiferyObtainMarks.dispatchEvent(new Event('input', { bubbles: true }));
+    midwiferyObtainMarks.dispatchEvent(new Event('change', { bubbles: true }));
+    console.log(`[MIDWIFERY] Filled Midwifery Obtain Marks: ${data.midwifery_obtained_marks}`);
+    filledCount++;
+  } else {
+    console.log(`[MIDWIFERY] SKIPPED: field=${!!midwiferyObtainMarks}, value=${data.midwifery_obtained_marks}`);
+  }
+
+  // Handle Midwifery Board (TextBox31)
+  const midwiferyBoard = document.getElementById('MainContent_TextBox33');
+  console.log(`[MIDWIFERY] Field found: ${!!midwiferyBoard}, data.midwifery_board: ${data.general_nursing_board}`);
+  if (midwiferyBoard && data.general_nursing_board) {
+    midwiferyBoard.value = data.general_nursing_board;
+    midwiferyBoard.dispatchEvent(new Event('input', { bubbles: true }));
+    midwiferyBoard.dispatchEvent(new Event('change', { bubbles: true }));
+    console.log(`[MIDWIFERY] Filled Midwifery Board: ${data.general_nursing_board}`);
+    filledCount++;
+  } else {
+    console.log(`[MIDWIFERY] SKIPPED: field=${!!midwiferyBoard}, value=${data.general_nursing_board}`);
   }
 
 
