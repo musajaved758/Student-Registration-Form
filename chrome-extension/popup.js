@@ -4,14 +4,317 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 let selectedStudent = null;
 let allStudents = [];
+const STUDENTS_CACHE_KEY = 'studentsCache';
+const DONE_STUDENTS_KEY = 'doneStudentKeys';
+let doneStudentKeys = new Set();
+let activeStudentFilter = 'all';
+
+function isGoodStudentsData(students) {
+  if (!Array.isArray(students) || students.length === 0) {
+    return false;
+  }
+
+  return students.every(student => typeof student === 'object' && student !== null);
+}
+
+function formatCacheAge(savedAt) {
+  if (!savedAt) {
+    return 'saved earlier';
+  }
+
+  const ageMs = Date.now() - savedAt;
+  const ageMinutes = Math.floor(ageMs / 60000);
+
+  if (ageMinutes < 1) {
+    return 'just now';
+  }
+
+  if (ageMinutes < 60) {
+    return `${ageMinutes} min ago`;
+  }
+
+  const ageHours = Math.floor(ageMinutes / 60);
+  if (ageHours < 24) {
+    return `${ageHours} hr ago`;
+  }
+
+  const ageDays = Math.floor(ageHours / 24);
+  return `${ageDays} day(s) ago`;
+}
+
+async function saveStudentsToCache(students) {
+  if (!isGoodStudentsData(students)) {
+    return false;
+  }
+
+  await chrome.storage.local.set({
+    [STUDENTS_CACHE_KEY]: {
+      data: students,
+      savedAt: Date.now()
+    }
+  });
+
+  return true;
+}
+
+async function loadStudentsFromCache(showMessage = false) {
+  try {
+    const result = await chrome.storage.local.get(STUDENTS_CACHE_KEY);
+    const cached = result[STUDENTS_CACHE_KEY];
+
+    if (!cached || !isGoodStudentsData(cached.data)) {
+      return false;
+    }
+
+    allStudents = cached.data;
+    refreshStudentList();
+    updateStudentCounter(allStudents.length);
+
+    if (showMessage) {
+      showStatus(
+        `Loaded ${allStudents.length} cached students (${formatCacheAge(cached.savedAt)})`,
+        'success'
+      );
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Cache load error:', error);
+    return false;
+  }
+}
+
+function getStudentKey(student) {
+  if (!student || typeof student !== 'object') {
+    return '';
+  }
+
+  const idCandidate = student.id ?? student.student_id ?? student.application_id;
+  if (idCandidate !== undefined && idCandidate !== null && idCandidate !== '') {
+    return `id:${String(idCandidate)}`;
+  }
+
+  if (student.student_cnic) {
+    return `cnic:${String(student.student_cnic).trim()}`;
+  }
+
+  if (student.email) {
+    return `email:${String(student.email).trim().toLowerCase()}`;
+  }
+
+  if (student.pnc_number) {
+    return `pnc:${String(student.pnc_number).trim()}`;
+  }
+
+  const fallback = [
+    student.student_name || '',
+    student.father_name || '',
+    student.contact_number || '',
+    student.matric_roll_no || ''
+  ].join('|').toLowerCase();
+
+  return `fallback:${fallback}`;
+}
+
+function isStudentDone(student) {
+  return doneStudentKeys.has(getStudentKey(student));
+}
+
+async function loadDoneStudentsFromStorage() {
+  try {
+    const result = await chrome.storage.local.get(DONE_STUDENTS_KEY);
+    const storedKeys = result[DONE_STUDENTS_KEY];
+    doneStudentKeys = new Set(Array.isArray(storedKeys) ? storedKeys : []);
+  } catch (error) {
+    console.error('Done students load error:', error);
+    doneStudentKeys = new Set();
+  }
+}
+
+async function saveDoneStudentsToStorage() {
+  await chrome.storage.local.set({
+    [DONE_STUDENTS_KEY]: Array.from(doneStudentKeys)
+  });
+}
+
+function matchesStudentSearch(student, searchTerm) {
+  if (!searchTerm) {
+    return true;
+  }
+
+  return (
+    student.student_name?.toLowerCase().includes(searchTerm) ||
+    student.email?.toLowerCase().includes(searchTerm) ||
+    student.student_cnic?.toLowerCase().includes(searchTerm) ||
+    student.father_name?.toLowerCase().includes(searchTerm) ||
+    student.contact_number?.toLowerCase().includes(searchTerm) ||
+    student.pnc_number?.toLowerCase().includes(searchTerm)
+  );
+}
+
+function updateFilterButtons() {
+  const filterAllBtn = document.getElementById('filterAll');
+  const filterDoneBtn = document.getElementById('filterDone');
+  const filterRemainingBtn = document.getElementById('filterRemaining');
+
+  if (!filterAllBtn || !filterDoneBtn || !filterRemainingBtn) {
+    return;
+  }
+
+  const totalCount = allStudents.length;
+  let doneCount = 0;
+
+  allStudents.forEach(student => {
+    if (isStudentDone(student)) {
+      doneCount++;
+    }
+  });
+
+  const remainingCount = Math.max(totalCount - doneCount, 0);
+
+  filterAllBtn.textContent = `All Students (${totalCount})`;
+  filterDoneBtn.textContent = `Done (${doneCount})`;
+  filterRemainingBtn.textContent = `Remaining (${remainingCount})`;
+
+  filterAllBtn.classList.toggle('active', activeStudentFilter === 'all');
+  filterDoneBtn.classList.toggle('active', activeStudentFilter === 'done');
+  filterRemainingBtn.classList.toggle('active', activeStudentFilter === 'remaining');
+}
+
+function getVisibleStudents() {
+  const searchTerm = document.getElementById('searchInput')?.value.trim().toLowerCase() || '';
+
+  return allStudents.filter(student => {
+    const studentDone = isStudentDone(student);
+
+    if (activeStudentFilter === 'done' && !studentDone) {
+      return false;
+    }
+
+    if (activeStudentFilter === 'remaining' && studentDone) {
+      return false;
+    }
+
+    return matchesStudentSearch(student, searchTerm);
+  });
+}
+
+function refreshStudentList() {
+  displayStudents(getVisibleStudents());
+  updateFilterButtons();
+}
+
+function setActiveStudentFilter(filterName) {
+  activeStudentFilter = filterName;
+  refreshStudentList();
+}
+
+async function toggleStudentDone(student) {
+  const studentKey = getStudentKey(student);
+  if (!studentKey) {
+    return;
+  }
+
+  if (doneStudentKeys.has(studentKey)) {
+    doneStudentKeys.delete(studentKey);
+    await saveDoneStudentsToStorage();
+    refreshStudentList();
+    showStatus(`Moved to Remaining: ${student.student_name || 'Student'}`, 'success');
+    return;
+  }
+
+  doneStudentKeys.add(studentKey);
+  await saveDoneStudentsToStorage();
+  refreshStudentList();
+  showStatus(`Marked Done: ${student.student_name || 'Student'}`, 'success');
+}
+
+function updateStudentCounter(total) {
+  const counterEl = document.getElementById('studentCounter');
+  if (!counterEl) {
+    return;
+  }
+
+  counterEl.textContent = `Total Students = ${total}`;
+}
+
+function escapeCsvValue(value) {
+  if (value === null || value === undefined) {
+    return '""';
+  }
+
+  const normalized = String(value).replace(/[\r\n]+/g, ' ');
+  return `"${normalized.replace(/"/g, '""')}"`;
+}
+
+function buildStudentsCsv(students) {
+  const columnSet = new Set();
+  students.forEach(student => {
+    if (!student || typeof student !== 'object') {
+      return;
+    }
+
+    Object.keys(student).forEach(key => columnSet.add(key));
+  });
+
+  const columns = Array.from(columnSet);
+  if (columns.length === 0) {
+    return '';
+  }
+
+  const headerRow = columns.map(escapeCsvValue).join(',');
+  const dataRows = students.map(student =>
+    columns.map(column => escapeCsvValue(student?.[column])).join(',')
+  );
+
+  return [headerRow, ...dataRows].join('\n');
+}
+
+function downloadStudentsCsv() {
+  if (!Array.isArray(allStudents) || allStudents.length === 0) {
+    showStatus('No student data available to download', 'error');
+    return;
+  }
+
+  const csvContent = buildStudentsCsv(allStudents);
+  if (!csvContent) {
+    showStatus('Could not build CSV from student data', 'error');
+    return;
+  }
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const blobUrl = URL.createObjectURL(blob);
+  const downloadLink = document.createElement('a');
+  const dateTag = new Date().toISOString().slice(0, 10);
+
+  downloadLink.href = blobUrl;
+  downloadLink.download = `students-${dateTag}.csv`;
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  document.body.removeChild(downloadLink);
+  URL.revokeObjectURL(blobUrl);
+
+  showStatus(`Downloaded CSV for ${allStudents.length} students`, 'success');
+}
 
 // Initialize - auto-fetch data when popup opens
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('fetchData').addEventListener('click', fetchStudents);
   document.getElementById('fillForm').addEventListener('click', fillFormWithData);
   document.getElementById('clearData').addEventListener('click', clearStoredData);
+  document.getElementById('downloadCsv').addEventListener('click', downloadStudentsCsv);
+  document.getElementById('filterAll').addEventListener('click', () => setActiveStudentFilter('all'));
+  document.getElementById('filterDone').addEventListener('click', () => setActiveStudentFilter('done'));
+  document.getElementById('filterRemaining').addEventListener('click', () => setActiveStudentFilter('remaining'));
   document.getElementById('searchInput').addEventListener('input', filterStudents);
   
+  updateStudentCounter(0);
+  await loadDoneStudentsFromStorage();
+  updateFilterButtons();
+
+  // Restore last good data so panel still works after close/reopen or offline mode
+  await loadStudentsFromCache(true);
+
   // Auto-fetch data on load
   fetchStudents();
 });
@@ -50,23 +353,43 @@ async function fetchStudents() {
     }
 
     allStudents = await response.json();
+    updateStudentCounter(allStudents.length);
+
+    if (isGoodStudentsData(allStudents)) {
+      await saveStudentsToCache(allStudents);
+    } else {
+      console.warn('Fetched data was empty/invalid, keeping previous cache intact');
+    }
+
+    refreshStudentList();
+
     console.log('Fetched students:', allStudents.length);
     
     if (allStudents.length === 0) {
       showStatus('No students found in database', 'error');
     } else {
-      displayStudents(allStudents);
       showStatus(`Found ${allStudents.length} students`, 'success');
     }
   } catch (error) {
-    console.error('Fetch error:', error);
-    
     // Show more helpful error message
-    let errorMsg = error.message;
-    if (error.message.includes('Failed to fetch')) {
+    const errorMsgRaw = error instanceof Error ? error.message : String(error || 'Unknown error');
+    const errorMsgLower = errorMsgRaw.toLowerCase();
+    let errorMsg = errorMsgRaw;
+    if (errorMsgLower.includes('failed to fetch') || errorMsgLower.includes('network')) {
       errorMsg = 'Network error. Check: 1) Internet connection 2) Supabase URL 3) Enable CORS in Supabase';
     }
-    
+
+    const hasStudentsInMemory = Array.isArray(allStudents) && allStudents.length > 0;
+    const hasCacheFallback = hasStudentsInMemory || await loadStudentsFromCache(false);
+
+    if (hasCacheFallback) {
+      console.warn('Fetch failed, showing cached students:', errorMsgRaw);
+      refreshStudentList();
+      showStatus(`Using cached data: ${allStudents.length} students`, 'success');
+      return;
+    }
+
+    console.error('Fetch error (no cache fallback):', error);
     showStatus('Error: ' + errorMsg, 'error');
   }
 }
@@ -84,25 +407,48 @@ function displayStudents(students) {
 
   students.forEach(student => {
     const item = document.createElement('div');
-    item.className = 'data-item';
+    const studentDone = isStudentDone(student);
+    const studentKey = getStudentKey(student);
+    const selectedKey = selectedStudent ? getStudentKey(selectedStudent) : '';
+    const doneButtonTitle = studentDone ? 'Move to Remaining' : 'Mark as Done';
+
+    item.className = `data-item${studentDone ? ' done' : ''}`;
+    if (studentKey && selectedKey && studentKey === selectedKey) {
+      item.classList.add('selected');
+    }
+
     item.innerHTML = `
-      <div class="student-header">
-        <span class="student-name">${student.student_name}</span>
-        <span class="student-cnic">${student.student_cnic || 'N/A'}</span>
-      </div>
-      <div class="student-details">
-        <span>Father: ${student.father_name || 'N/A'}</span>
-        <span>Contact: ${student.contact_number || 'N/A'}</span>
-        <span>Email: ${student.email || 'N/A'}</span>
-      </div>
-      <div class="student-academic">
-        <span>Matric: ${student.matric_board || 'N/A'} (${student.matric_passing_year || 'N/A'})</span>
-        <span>Matric RollNo: (${student.matric_roll_no || 'N/A'}) Matric Reg: (${student.matric_registration_no || 'N/A'})</span>
-        <span>PNC: ${student.pnc_number || 'N/A'} </span>
-        <span>GN Obtain Marks: ${student.general_nursing_obtain_marks || 'N/A'} </span>
-        <span>GN Obtain Marks: ${student.general_nursing_obtain_marks || 'N/A'} </span>
+      <div class="student-row">
+        <div class="student-main">
+          <div class="student-header">
+            <span class="student-name">${student.student_name}</span>
+            <span class="student-cnic">${student.student_cnic || 'N/A'}</span>
+          </div>
+          <div class="student-details">
+            <span>Father: ${student.father_name || 'N/A'}</span>
+            <span>Contact: ${student.contact_number || 'N/A'}</span>
+            <span>Email: ${student.email || 'N/A'}</span>
+          </div>
+          <div class="student-academic">
+            <span>Matric: ${student.matric_board || 'N/A'} (${student.matric_passing_year || 'N/A'})</span>
+            <span>Matric RollNo: (${student.matric_roll_no || 'N/A'}) Matric Reg: (${student.matric_registration_no || 'N/A'})</span>
+            <span>PNC: ${student.pnc_number || 'N/A'} </span>
+            <span>GN Obtain Marks: ${student.general_nursing_obtain_marks || 'N/A'} </span>
+            <span>GN Obtain Marks: ${student.general_nursing_obtain_marks || 'N/A'} </span>
+          </div>
+        </div>
+        <button class="done-toggle ${studentDone ? 'is-done' : ''}" type="button" title="${doneButtonTitle}" aria-label="${doneButtonTitle}">&#10003;</button>
       </div>
     `;
+
+    const doneToggle = item.querySelector('.done-toggle');
+    if (doneToggle) {
+      doneToggle.addEventListener('click', async event => {
+        event.stopPropagation();
+        await toggleStudentDone(student);
+      });
+    }
+
     item.addEventListener('click', () => selectStudent(student, item));
     listDiv.appendChild(item);
   });
@@ -111,17 +457,8 @@ function displayStudents(students) {
 }
 
 // Filter students based on search across all fields
-function filterStudents(e) {
-  const searchTerm = e.target.value.toLowerCase();
-  const filtered = allStudents.filter(s => 
-    s.student_name?.toLowerCase().includes(searchTerm) ||
-    s.email?.toLowerCase().includes(searchTerm) ||
-    s.student_cnic?.toLowerCase().includes(searchTerm) ||
-    s.father_name?.toLowerCase().includes(searchTerm) ||
-    s.contact_number?.toLowerCase().includes(searchTerm) ||
-    s.pnc_number?.toLowerCase().includes(searchTerm)
-  );
-  displayStudents(filtered);
+function filterStudents() {
+  refreshStudentList();
 }
 
 // Select a student with visual highlighting
@@ -783,7 +1120,12 @@ function fillForm(data) {
 function clearStoredData() {
   selectedStudent = null;
   allStudents = [];
+  doneStudentKeys = new Set();
+  activeStudentFilter = 'all';
+  updateStudentCounter(0);
+  updateFilterButtons();
   chrome.storage.local.clear();
+  document.getElementById('studentList').innerHTML = '';
   document.getElementById('studentList').style.display = 'none';
   document.getElementById('fillForm').style.display = 'none';
   document.getElementById('searchInput').value = '';
