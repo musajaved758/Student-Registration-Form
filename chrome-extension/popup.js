@@ -592,11 +592,38 @@ function fillForm(data) {
   };
 
   let filledCount = 0;
+  const noDashFields = new Set(['student_cnic', 'father_cnic', 'contact_number']);
+
+  function normalizeNoDashValue(dataKey, rawValue) {
+    const stringValue = String(rawValue ?? '').trim();
+
+    if (dataKey === 'student_cnic' || dataKey === 'father_cnic') {
+      return stringValue.replace(/\D/g, '').slice(0, 13);
+    }
+
+    if (dataKey === 'contact_number') {
+      if (stringValue.startsWith('+')) {
+        const normalizedPlus = `+${stringValue.slice(1).replace(/\D/g, '')}`;
+        return normalizedPlus.startsWith('+92') ? normalizedPlus.slice(0, 13) : normalizedPlus;
+      }
+
+      let normalized = stringValue.replace(/\D/g, '');
+      if (normalized.length > 0 && !normalized.startsWith('0')) {
+        normalized = `0${normalized}`;
+      }
+      return normalized.slice(0, 11);
+    }
+
+    return stringValue;
+  }
 
   // Try to fill each field using multiple strategies
   Object.keys(fieldMappings).forEach(dataKey => {
     const possibleIds = fieldMappings[dataKey];
-    const value = data[dataKey];
+    const rawValue = data[dataKey];
+    if (rawValue === null || rawValue === undefined || rawValue === '') return;
+
+    const value = normalizeNoDashValue(dataKey, rawValue);
     
     if (!value) return;
 
@@ -626,7 +653,17 @@ function fillForm(data) {
           element.dispatchEvent(new Event('input', { bubbles: true }));
           element.dispatchEvent(new Event('change', { bubbles: true }));
           element.dispatchEvent(new Event('blur', { bubbles: true }));
-          console.log(`Filled ${dataKey} in ${id}`);
+
+          // Keep CNIC/phone values dash-free after page-level event handlers run.
+          if (noDashFields.has(dataKey)) {
+            const normalizedCurrentValue = normalizeNoDashValue(dataKey, element.value);
+            if (element.value !== normalizedCurrentValue) {
+              element.value = normalizedCurrentValue;
+              element.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+          }
+
+          console.log(`Filled ${dataKey} in ${id}: ${value}`);
         }
         filledCount++;
         break;
@@ -1096,7 +1133,7 @@ function fillForm(data) {
         filledCount++;
       }
       if (labelText.includes('cnic') && data.student_cnic && !input.value) {
-        input.value = data.student_cnic;
+        input.value = normalizeNoDashValue('student_cnic', data.student_cnic);
         filledCount++;
       }
       if (labelText.includes('email') && data.email && !input.value) {

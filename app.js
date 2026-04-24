@@ -485,50 +485,45 @@ function populateYears() {
 
 // Formatting and Realtime Validation
 function setupRealtimeValidation() {
-    // CNIC Formatting (00000-0000000-0)
+    // CNIC normalization (13 digits, no dashes)
     const cnicInputs = ['student_cnic', 'father_cnic'];
     cnicInputs.forEach(id => {
         const input = document.getElementById(id);
         if (!input) return; // Prevent crash if element doesn't exist
         
         input.addEventListener('input', (e) => {
-            let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
-            if (value.length > 13) value = value.slice(0, 13);
-            
-            // Format
-            if (value.length > 5 && value.length <= 12) {
-                value = `${value.slice(0, 5)}-${value.slice(5)}`;
-            } else if (value.length > 12) {
-                value = `${value.slice(0, 5)}-${value.slice(5, 12)}-${value.slice(12)}`;
-            }
+            const value = e.target.value.replace(/\D/g, '').slice(0, 13);
             e.target.value = value;
             
-            if(value.length === 15) validateField(input);
+            if (value.length === 13) validateField(input);
         });
     });
 
-    // Contact Number (+92 or 03XX)
+    // Contact Number normalization (+923XXXXXXXXX or 03XXXXXXXXX)
     const contact = document.getElementById('contact_number');
     if (!contact) return; // Prevent crash if element doesn't exist
     contact.addEventListener('input', (e) => {
-        let value = e.target.value.replace(/[^\d+]/g, ''); // Keep digits and +
-        if (!value.startsWith('+92') && value.length > 0 && !value.startsWith('0')) {
-            value = '0' + value; // Auto prefix 0 if starting with number
-        }
-
-        // Format 03XX-XXXXXXX
-        if (value.startsWith('03')) {
-            value = value.replace(/[^\d]/g, ''); // strip non-digits for formatting
-            if(value.length > 11) value = value.slice(0, 11);
-            if (value.length > 4) {
-               value = `${value.slice(0,4)}-${value.slice(4)}`;
+        let value = e.target.value.trim();
+        if (value.startsWith('+')) {
+            value = `+${value.slice(1).replace(/\D/g, '')}`;
+            if (value.startsWith('+92') && value.length > 13) {
+                value = value.slice(0, 13);
             }
-        } else if (value.startsWith('+92')) {
-            if(value.length > 13) value = value.slice(0, 13);
+        } else {
+            value = value.replace(/\D/g, '');
+            if (!value.startsWith('0') && value.length > 0) {
+                value = `0${value}`;
+            }
+            if (value.length > 11) {
+                value = value.slice(0, 11);
+            }
         }
 
         e.target.value = value;
-        if(value.length >= 11) validateField(contact);
+
+        const localReady = value.startsWith('03') && value.length === 11;
+        const intlReady = value.startsWith('+92') && value.length === 13;
+        if (localReady || intlReady) validateField(contact);
     });
 
     // Marks Validation
@@ -646,9 +641,9 @@ function validateField(input) {
         switch(input.id) {
             case 'student_cnic':
             case 'father_cnic':
-                if (!/^\d{5}-\d{7}-\d{1}$/.test(value)) {
+                if (!/^\d{13}$/.test(value)) {
                     isValid = false;
-                    errorMsg = 'Format must be 00000-0000000-0';
+                    errorMsg = 'Format must be 13 digits';
                 }
                 break;
             case 'email':
@@ -658,10 +653,9 @@ function validateField(input) {
                 }
                 break;
     case 'contact_number':
-        // 🔧 More flexible validation for GitHub Pages testing
-        if (!/^(03\d{2}[- ]?\d{7}|\+92[3]\d{9})$/.test(value)) {
+        if (!/^(03\d{9}|\+923\d{9})$/.test(value)) {
             isValid = false;
-            errorMsg = 'Format: 03XX-XXXXXXX or +923XXXXXXXXX';
+            errorMsg = 'Format: 03XXXXXXXXX or +923XXXXXXXXX';
         }
         break;
             case 'date_of_birth':
